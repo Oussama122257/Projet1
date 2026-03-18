@@ -7,6 +7,12 @@ load_dotenv()
 class Settings:
     SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-change-me")
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./data/threads_bot.db")
+    RAILWAY_VOLUME_MOUNT: str = os.getenv("RAILWAY_VOLUME_MOUNT_PATH", "")
+
+    def __init__(self):
+        # On Railway with a volume, store DB on the persistent volume
+        if self.RAILWAY_VOLUME_MOUNT:
+            self.DATABASE_URL = f"sqlite+aiosqlite:///{self.RAILWAY_VOLUME_MOUNT}/threads_bot.db"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 

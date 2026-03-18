@@ -18,6 +18,20 @@ python run.py
 
 Open **http://localhost:8000** - register an account and start scraping.
 
+## Deploy to Railway
+
+1. Push this repo to GitHub
+2. Go to [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo**
+3. Select this repo
+4. Add environment variables in Railway dashboard → **Variables**:
+   - `SECRET_KEY` (random string)
+   - `RAPIDAPI_KEY`
+   - Plus any AI keys you want (ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY)
+5. (Optional) Add a **Volume** for persistent SQLite storage:
+   - Railway dashboard → **Add Volume** → mount path: `/data`
+   - Set variable: `RAILWAY_VOLUME_MOUNT_PATH=/data`
+6. Railway auto-deploys — click the generated URL to open your app
+
 ## Docker
 
 ```bash
