@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Job #{{ job.id }} - Threads Bot{% endblock %}
+{% block body %}
+{% set active = "scraper" %}
+{% include "components/sidebar.html" %}
+
+<main class="ml-64 p-8">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h2 class="text-2xl font-bold">@{{ job.target_username }}</h2>
+            <p class="text-gray-500 text-sm mt-1">Job #{{ job.id }} &bull;
+                {% if job.status == 'completed' %}
+                    <span class="text-green-400">completed</span>
+                {% elif job.status == 'failed' %}
+                    <span class="text-red-400">failed: {{ job.error_message }}</span>
+                {% else %}
+                    <span class="text-blue-400">{{ job.status }}</span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="flex gap-2">
+            <a href="/api/export/job/{{ job.id }}/posts" class="px-4 py-2 bg-green-600/20 text-green-400 hover:bg-green-600/30 rounded-lg text-sm transition">Export Posts CSV</a>
+            <a href="/api/export/job/{{ job.id }}/ai" class="px-4 py-2 bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 rounded-lg text-sm transition">Export AI CSV</a>
+        </div>
+    </div>
+
+    <!-- Profile Card -->
+    {% if job.profile_data %}
+    <div class="glass rounded-xl p-6 mb-8">
+        <div class="flex items-center gap-4">
+            {% if job.profile_data.profile_pic_url %}
+            <img src="{{ job.profile_data.profile_pic_url }}" class="w-16 h-16 rounded-full" alt="avatar">
+            {% endif %}
+            <div>
+                <h3 class="text-lg font-semibold">{{ job.profile_data.full_name or job.target_username }}</h3>
+                <p class="text-gray-400 text-sm">@{{ job.target_username }}</p>
+                <p class="text-gray-500 text-sm mt-1">{{ job.profile_data.bio or '' }}</p>
+            </div>
+            <div class="ml-auto flex gap-6 text-center">
+                <div>
+                    <div class="text-xl font-bold">{{ job.profile_data.followers or 0 }}</div>
+                    <div class="text-xs text-gray-500">Followers</div>
+                </div>
+                <div>
+                    <div class="text-xl font-bold">{{ job.profile_data.following or 0 }}</div>
+                    <div class="text-xs text-gray-500">Following</div>
+                </div>
+                <div>
+                    <div class="text-xl font-bold">{{ posts|length }}</div>
+                    <div class="text-xs text-gray-500">Posts</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- AI Generate -->
+    <div class="glass rounded-xl p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-4">Generate AI Content</h3>
+        <form method="POST" action="/api/generate/run" class="flex gap-3 items-end">
+            <input type="hidden" name="job_id" value="{{ job.id }}">
+            <div class="w-48">
+                <label class="block text-sm text-gray-400 mb-1">AI Provider</label>
+                <select name="provider" class="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-brand-500">
+                    <option value="anthropic">Claude (Anthropic)</option>
+                    <option value="openai">GPT-4o (OpenAI)</option>
+                    <option value="gemini">Gemini (Google)</option>
+                </select>
+            </div>
+            <button type="submit" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 rounded-lg font-medium transition">Generate</button>
+        </form>
+    </div>
+
+    <!-- Generated Posts -->
+    {% if generated %}
+    <div class="glass rounded-xl overflow-hidden mb-8">
+        <div class="p-5 border-b border-white/10">
+            <h3 class="text-lg font-semibold">AI Generated Content</h3>
+        </div>
+        <div class="divide-y divide-white/5">
+            {% for gp in generated %}
+            <div class="p-5 hover:bg-white/5">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <div class="font-medium text-brand-400">{{ gp.title }}</div>
+                        <p class="text-gray-300 mt-1">{{ gp.text }}</p>
+                        <p class="text-xs text-gray-500 mt-2">{{ gp.ai_provider }} &bull; {{ gp.created_at.strftime('%Y-%m-%d %H:%M') if gp.created_at else '' }}</p>
+                    </div>
+                    <div class="ml-4 flex gap-2">
+                        {% if gp.is_posted %}
+                            <span class="px-3 py-1 bg-green-500/10 text-green-400 rounded-full text-xs">Posted</span>
+                        {% else %}
+                            <form method="POST" action="/api/post/{{ gp.id }}">
+                                <button type="submit" class="px-3 py-1 bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 rounded-full text-xs transition">Post to Threads</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Scraped Posts Table -->
+    <div class="glass rounded-xl overflow-hidden">
+        <div class="p-5 border-b border-white/10">
+            <h3 class="text-lg font-semibold">Scraped Posts ({{ posts|length }})</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="text-gray-400 border-b border-white/5">
+                    <tr>
+                        <th class="text-left p-4 w-1/2">Text</th>
+                        <th class="text-left p-4">Likes</th>
+                        <th class="text-left p-4">Replies</th>
+                        <th class="text-left p-4">Reposts</th>
+                        <th class="text-left p-4">Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for post in posts %}
+                    <tr class="border-b border-white/5 hover:bg-white/5">
+                        <td class="p-4 text-gray-300">{{ post.text[:150] }}{% if post.text|length > 150 %}...{% endif %}</td>
+                        <td class="p-4 text-gray-400">{{ post.like_count }}</td>
+                        <td class="p-4 text-gray-400">{{ post.reply_count }}</td>
+                        <td class="p-4 text-gray-400">{{ post.repost_count }}</td>
+                        <td class="p-4 text-gray-400 text-xs">{{ post.posted_at }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+{% endblock %}

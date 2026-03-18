@@ -1,50 +1,63 @@
-# Threads Scraper Bot
+# Threads Scraper Bot - Local SaaS
 
-A Python bot that scrapes Threads profiles/posts via RapidAPI, generates AI content (Claude/OpenAI/Gemini), posts to Threads, exports to CSV, and sends Telegram notifications.
+A full-featured web application for scraping Threads profiles, generating AI content, posting to Threads, exporting to CSV, and sending Telegram notifications.
 
-## Setup
+## Quick Start
 
 ```bash
+# 1. Install dependencies
 pip install -r requirements.txt
+
+# 2. Configure environment
 cp .env.example .env
 # Edit .env with your API keys
+
+# 3. Run the server
+python run.py
 ```
 
-## Usage
+Open **http://localhost:8000** - register an account and start scraping.
+
+## Docker
 
 ```bash
-# Scrape profile + AI analysis + export to CSV
-python bot.py scrape zuck
-
-# Full pipeline (scrape + AI + post + export + notify)
-python bot.py full zuck --ai anthropic
-
-# Export only (no AI, no posting)
-python bot.py export zuck --posts 100
-
-# Scrape with options
-python bot.py scrape zuck --posts 30 --ai openai --post --no-notify
+cp .env.example .env
+docker compose up -d
 ```
 
-## Configuration (.env)
+## Features
 
-| Variable | Description |
+- **Auth System** - Register/login with secure password hashing
+- **Threads Scraper** - Scrape any profile's posts via RapidAPI (likes, replies, dates)
+- **AI Content Generator** - Generate posts using Claude, GPT-4o, or Gemini
+- **Threads Publisher** - Post AI-generated content directly to Threads
+- **CSV Export** - Download scraped data and AI content as CSV
+- **Telegram Notifications** - Get notified on scrape/generate/post events
+- **Dashboard** - Stats overview, job history, quick actions
+- **Per-User Settings** - Each user configures their own API keys
+
+## Pages
+
+| Route | Description |
 |---|---|
-| `RAPIDAPI_KEY` | RapidAPI key for Threads API |
-| `ANTHROPIC_API_KEY` | Claude API key |
-| `OPENAI_API_KEY` | OpenAI API key |
-| `GEMINI_API_KEY` | Google Gemini API key |
-| `AI_PROVIDER` | Default AI: `anthropic`, `openai`, or `gemini` |
-| `THREADS_ACCESS_TOKEN` | Meta Threads API access token |
-| `THREADS_USER_ID` | Your Threads user ID |
-| `TELEGRAM_BOT_TOKEN` | Telegram bot token |
-| `TELEGRAM_CHAT_ID` | Telegram chat ID for notifications |
+| `/dashboard` | Stats overview + quick scrape |
+| `/api/scraper` | Scrape profiles, view job history |
+| `/api/scraper/job/{id}` | Job detail: profile, posts, AI, export |
+| `/api/generate` | AI content generation from scrape jobs |
+| `/api/settings` | Configure API keys per user |
 
-## Modules
+## API Keys Needed
 
-- **scraper.py** - Scrapes Threads profiles and posts via RapidAPI
-- **ai_generator.py** - Generates content with Claude, OpenAI, or Gemini
-- **poster.py** - Posts to Threads via Meta's official API
-- **exporter.py** - Exports data to CSV files
-- **notifier.py** - Sends Telegram notifications
-- **bot.py** - Main orchestrator and CLI
+| Service | Purpose | Where to get |
+|---|---|---|
+| RapidAPI | Threads scraping | rapidapi.com |
+| Anthropic / OpenAI / Gemini | AI generation | respective provider sites |
+| Meta Threads API | Posting | developers.facebook.com/docs/threads |
+| Telegram Bot | Notifications | @BotFather on Telegram |
+
+## Tech Stack
+
+- **Backend**: FastAPI + SQLAlchemy + SQLite
+- **Frontend**: Jinja2 + Tailwind CSS
+- **Auth**: JWT (cookie-based) + bcrypt
+- **Jobs**: FastAPI BackgroundTasks

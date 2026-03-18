@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Scraper - Threads Bot{% endblock %}
+{% block body %}
+{% set active = "scraper" %}
+{% include "components/sidebar.html" %}
+
+<main class="ml-64 p-8">
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold">Threads Scraper</h2>
+        <p class="text-gray-500 text-sm mt-1">Scrape any Threads profile and posts</p>
+    </div>
+
+    <!-- Scrape Form -->
+    <div class="glass rounded-xl p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-4">New Scrape Job</h3>
+        <form method="POST" action="/api/scraper/run" class="flex flex-wrap gap-3 items-end">
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-sm text-gray-400 mb-1">Username</label>
+                <input type="text" name="username" placeholder="zuck" required class="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-brand-500">
+            </div>
+            <div class="w-32">
+                <label class="block text-sm text-gray-400 mb-1">Max Posts</label>
+                <input type="number" name="max_posts" value="50" min="1" max="200" class="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-brand-500">
+            </div>
+            <button type="submit" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-500 rounded-lg font-medium transition">
+                Start Scrape
+            </button>
+        </form>
+    </div>
+
+    <!-- Job History -->
+    <div class="glass rounded-xl overflow-hidden">
+        <div class="p-5 border-b border-white/10">
+            <h3 class="text-lg font-semibold">Scrape History</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="text-gray-400 border-b border-white/5">
+                    <tr>
+                        <th class="text-left p-4">#</th>
+                        <th class="text-left p-4">Target</th>
+                        <th class="text-left p-4">Status</th>
+                        <th class="text-left p-4">Posts</th>
+                        <th class="text-left p-4">Date</th>
+                        <th class="text-left p-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for job in jobs %}
+                    <tr class="border-b border-white/5 hover:bg-white/5">
+                        <td class="p-4 text-gray-500">{{ job.id }}</td>
+                        <td class="p-4 font-medium">@{{ job.target_username }}</td>
+                        <td class="p-4">
+                            {% if job.status == 'completed' %}
+                                <span class="px-2 py-1 bg-green-500/10 text-green-400 rounded-full text-xs">completed</span>
+                            {% elif job.status == 'running' %}
+                                <span class="px-2 py-1 bg-blue-500/10 text-blue-400 rounded-full text-xs animate-pulse">running</span>
+                            {% elif job.status == 'failed' %}
+                                <span class="px-2 py-1 bg-red-500/10 text-red-400 rounded-full text-xs" title="{{ job.error_message }}">failed</span>
+                            {% else %}
+                                <span class="px-2 py-1 bg-gray-500/10 text-gray-400 rounded-full text-xs">pending</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-gray-400">{{ job.posts_count }}</td>
+                        <td class="p-4 text-gray-400">{{ job.created_at.strftime('%Y-%m-%d %H:%M') if job.created_at else '' }}</td>
+                        <td class="p-4 space-x-2">
+                            <a href="/api/scraper/job/{{ job.id }}" class="text-brand-400 hover:underline">View</a>
+                            {% if job.status == 'completed' %}
+                            <a href="/api/export/job/{{ job.id }}/posts" class="text-green-400 hover:underline">CSV</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                {% if not jobs %}
+                    <tr><td colspan="6" class="p-8 text-center text-gray-500">No scrape jobs yet.</td></tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<script>
+// Auto-refresh if any job is running
+{% for job in jobs %}{% if job.status in ('pending', 'running') %}
+setTimeout(() => location.reload(), 5000);
+{% endif %}{% endfor %}
+</script>
+{% endblock %}

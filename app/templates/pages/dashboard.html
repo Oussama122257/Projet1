@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Threads Bot{% endblock %}
+{% block body %}
+{% set active = "dashboard" %}
+{% include "components/sidebar.html" %}
+
+<main class="ml-64 p-8">
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold">Dashboard</h2>
+        <p class="text-gray-500 text-sm mt-1">Welcome back, {{ user.username }}</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="stat-card glass rounded-xl p-5">
+            <div class="text-3xl font-bold text-brand-400">{{ stats.total_jobs }}</div>
+            <div class="text-sm text-gray-400 mt-1">Scrape Jobs</div>
+        </div>
+        <div class="stat-card glass rounded-xl p-5">
+            <div class="text-3xl font-bold text-green-400">{{ stats.total_scraped }}</div>
+            <div class="text-sm text-gray-400 mt-1">Posts Scraped</div>
+        </div>
+        <div class="stat-card glass rounded-xl p-5">
+            <div class="text-3xl font-bold text-purple-400">{{ stats.total_generated }}</div>
+            <div class="text-sm text-gray-400 mt-1">AI Generated</div>
+        </div>
+        <div class="stat-card glass rounded-xl p-5">
+            <div class="text-3xl font-bold text-amber-400">{{ stats.total_posted }}</div>
+            <div class="text-sm text-gray-400 mt-1">Posted to Threads</div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="glass rounded-xl p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-4">Quick Scrape</h3>
+        <form method="POST" action="/api/scraper/run" class="flex gap-3">
+            <input type="text" name="username" placeholder="@username" required class="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-brand-500">
+            <input type="number" name="max_posts" value="50" min="1" max="200" class="w-24 px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-brand-500">
+            <button type="submit" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-500 rounded-lg font-medium transition">Scrape</button>
+        </form>
+    </div>
+
+    <!-- Recent Jobs -->
+    <div class="glass rounded-xl overflow-hidden">
+        <div class="p-5 border-b border-white/10">
+            <h3 class="text-lg font-semibold">Recent Jobs</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="text-gray-400 border-b border-white/5">
+                    <tr>
+                        <th class="text-left p-4">Target</th>
+                        <th class="text-left p-4">Status</th>
+                        <th class="text-left p-4">Posts</th>
+                        <th class="text-left p-4">Date</th>
+                        <th class="text-left p-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for job in recent_jobs %}
+                    <tr class="border-b border-white/5 hover:bg-white/5">
+                        <td class="p-4 font-medium">@{{ job.target_username }}</td>
+                        <td class="p-4">
+                            {% if job.status == 'completed' %}
+                                <span class="px-2 py-1 bg-green-500/10 text-green-400 rounded-full text-xs">completed</span>
+                            {% elif job.status == 'running' %}
+                                <span class="px-2 py-1 bg-blue-500/10 text-blue-400 rounded-full text-xs">running</span>
+                            {% elif job.status == 'failed' %}
+                                <span class="px-2 py-1 bg-red-500/10 text-red-400 rounded-full text-xs">failed</span>
+                            {% else %}
+                                <span class="px-2 py-1 bg-gray-500/10 text-gray-400 rounded-full text-xs">pending</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-gray-400">{{ job.posts_count }}</td>
+                        <td class="p-4 text-gray-400">{{ job.created_at.strftime('%Y-%m-%d %H:%M') if job.created_at else '' }}</td>
+                        <td class="p-4">
+                            <a href="/api/scraper/job/{{ job.id }}" class="text-brand-400 hover:underline text-sm">View</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                {% if not recent_jobs %}
+                    <tr><td colspan="5" class="p-8 text-center text-gray-500">No scrape jobs yet. Start by scraping a profile above.</td></tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+{% endblock %}

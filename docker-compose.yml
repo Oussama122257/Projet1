@@ -1,0 +1,10 @@
+services:
+  threads-bot:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./output:/app/output
+      - ./.env:/app/.env
+    restart: unless-stopped

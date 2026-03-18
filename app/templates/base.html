@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Threads Bot{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: {
+                brand: { 50:'#f0f5ff',100:'#e0ebff',200:'#b8d4fe',300:'#7cb4fd',400:'#3b8bfa',500:'#1a6deb',600:'#1054c9',700:'#0d41a3',800:'#0f3986',900:'#12306f' }
+            }}}
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+        .stat-card { transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body class="h-full text-gray-100">
+{% block body %}{% endblock %}
+</body>
+</html>
