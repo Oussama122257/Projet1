@@ -1,22 +1,22 @@
 'use client';
-
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  LayoutDashboard, Megaphone, BarChart3, Lightbulb, MessageSquare,
-  Settings, Plug, ChevronLeft, ChevronRight, Sparkles
-} from 'lucide-react';
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import {
+  LayoutDashboard, Megaphone, BarChart3, MessageSquare, FileText,
+  Users, Settings, CreditCard, ChevronLeft, ChevronRight, Sparkles, Zap
+} from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/campaigns', label: 'Campaigns', icon: Megaphone },
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { href: '/recommendations', label: 'AI Insights', icon: Lightbulb },
   { href: '/chat', label: 'AI Chat', icon: MessageSquare },
-  { href: '/platforms', label: 'Platforms', icon: Plug },
+  { href: '/reports', label: 'Reports', icon: FileText },
+  { href: '/team', label: 'Team', icon: Users },
   { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/billing', label: 'Billing', icon: CreditCard },
 ];
 
 export default function Sidebar() {
@@ -24,52 +24,74 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <aside className={cn(
-      'fixed left-0 top-0 h-screen bg-surface border-r border-border flex flex-col z-50 transition-all duration-300',
-      collapsed ? 'w-[68px]' : 'w-[240px]'
-    )}>
-      <div className="p-4 flex items-center gap-3 border-b border-border">
-        <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-          <Sparkles className="w-5 h-5 text-white" />
-        </div>
-        {!collapsed && (
-          <div>
-            <h1 className="text-lg font-bold text-text-primary">AdPilot</h1>
-            <p className="text-[10px] text-text-muted uppercase tracking-wider">AI Campaign Manager</p>
-          </div>
-        )}
-      </div>
-
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
+    <>
+      {/* Mobile bottom nav */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[var(--color-surface)] border-t border-[var(--color-border)] flex justify-around py-2">
+        {navItems.slice(0, 5).map(item => {
+          const Icon = item.icon;
+          const active = pathname === item.href;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
-                isActive
-                  ? 'bg-primary/15 text-primary-hover shadow-sm'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-              )}
-            >
-              <item.icon className={cn('w-5 h-5 flex-shrink-0', isActive && 'text-primary')} />
-              {!collapsed && <span>{item.label}</span>}
-              {!collapsed && item.href === '/chat' && (
-                <span className="ml-auto w-2 h-2 rounded-full bg-accent animate-pulse" />
-              )}
+            <Link key={item.href} href={item.href} className={cn('flex flex-col items-center gap-0.5 p-1', active ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]')}>
+              <Icon size={20} />
+              <span className="text-[10px]">{item.label}</span>
             </Link>
           );
         })}
       </nav>
+      {/* Desktop sidebar */}
+      <aside className={cn(
+        'hidden md:flex flex-col fixed top-0 left-0 h-screen bg-[var(--color-surface)] border-r border-[var(--color-border)] z-40 transition-all duration-300',
+        collapsed ? 'w-[68px]' : 'w-[240px]'
+      )}>
+        <div className={cn('flex items-center gap-2 p-4 border-b border-[var(--color-border)]', collapsed && 'justify-center')}>
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center">
+            <Zap size={18} className="text-white" />
+          </div>
+          {!collapsed && <span className="text-lg font-bold bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] bg-clip-text text-transparent">AdPilot</span>}
+        </div>
 
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="p-3 border-t border-border flex items-center justify-center text-text-muted hover:text-text-primary transition-colors"
-      >
-        {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-      </button>
-    </aside>
+        <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
+          {navItems.map(item => {
+            const Icon = item.icon;
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
+                  active ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]',
+                  collapsed && 'justify-center px-2'
+                )}
+              >
+                <Icon size={20} />
+                {!collapsed && <span>{item.label}</span>}
+                {!collapsed && item.label === 'AI Chat' && (
+                  <Sparkles size={14} className="ml-auto text-[var(--color-accent)]" />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className={cn('p-3 border-t border-[var(--color-border)]', collapsed && 'flex justify-center')}>
+          {!collapsed && (
+            <div className="flex items-center gap-3 px-3 py-2 mb-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white text-xs font-bold">SC</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">Sarah Chen</p>
+                <p className="text-xs text-[var(--color-text-muted)] truncate">Pro Plan</p>
+              </div>
+            </div>
+          )}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="flex items-center justify-center w-full p-2 rounded-lg text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] transition-colors cursor-pointer"
+          >
+            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }

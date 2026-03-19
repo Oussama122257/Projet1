@@ -1,59 +1,54 @@
-import { Platform } from '@/types';
+export function cn(...classes: (string | boolean | undefined | null)[]): string {
+  return classes.filter(Boolean).join(' ');
+}
 
 export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(value);
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 export function formatNumber(value: number): string {
-  if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-  if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
-  return value.toString();
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  return value.toLocaleString();
 }
 
 export function formatPercent(value: number): string {
-  return value.toFixed(2) + '%';
+  return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
 }
 
-export function getPlatformColor(platform: Platform): string {
-  const colors: Record<Platform, string> = {
-    facebook: '#1877f2',
-    tiktok: '#ff0050',
-    google: '#4285f4',
-    snapchat: '#fffc00',
+export function platformColor(platform: string): string {
+  const colors: Record<string, string> = {
+    google: 'bg-blue-500/20 text-blue-400',
+    meta: 'bg-indigo-500/20 text-indigo-400',
+    tiktok: 'bg-pink-500/20 text-pink-400',
+    snapchat: 'bg-yellow-500/20 text-yellow-400',
   };
-  return colors[platform];
+  return colors[platform] || 'bg-gray-500/20 text-gray-400';
 }
 
-export function getPlatformBgClass(platform: Platform): string {
-  const classes: Record<Platform, string> = {
-    facebook: 'bg-[#1877f2]/10 text-[#1877f2]',
-    tiktok: 'bg-[#ff0050]/10 text-[#ff0050]',
-    google: 'bg-[#4285f4]/10 text-[#4285f4]',
-    snapchat: 'bg-[#fffc00]/10 text-[#fffc00]',
+export function statusColor(status: string): string {
+  const colors: Record<string, string> = {
+    active: 'bg-emerald-500/20 text-emerald-400',
+    paused: 'bg-amber-500/20 text-amber-400',
+    deleted: 'bg-red-500/20 text-red-400',
+    draft: 'bg-gray-500/20 text-gray-400',
+    connected: 'bg-emerald-500/20 text-emerald-400',
+    expired: 'bg-red-500/20 text-red-400',
+    disconnected: 'bg-gray-500/20 text-gray-400',
+    pending: 'bg-amber-500/20 text-amber-400',
+    trialing: 'bg-cyan-500/20 text-cyan-400',
+    past_due: 'bg-red-500/20 text-red-400',
+    suspended: 'bg-red-500/20 text-red-400',
+    paid: 'bg-emerald-500/20 text-emerald-400',
+    failed: 'bg-red-500/20 text-red-400',
+    open: 'bg-blue-500/20 text-blue-400',
+    in_progress: 'bg-amber-500/20 text-amber-400',
+    resolved: 'bg-emerald-500/20 text-emerald-400',
   };
-  return classes[platform];
-}
-
-export function getPlatformName(platform: Platform): string {
-  const names: Record<Platform, string> = {
-    facebook: 'Facebook Ads',
-    tiktok: 'TikTok Ads',
-    google: 'Google Ads',
-    snapchat: 'Snapchat Ads',
-  };
-  return names[platform];
-}
-
-export function getStatusColor(status: string): string {
-  switch (status) {
-    case 'active': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-    case 'paused': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-    case 'completed': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-    case 'draft': return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
-    default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
-  }
-}
-
-export function cn(...classes: (string | false | undefined | null)[]): string {
-  return classes.filter(Boolean).join(' ');
+  return colors[status] || 'bg-gray-500/20 text-gray-400';
 }

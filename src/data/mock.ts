@@ -1,144 +1,93 @@
-import { Campaign, Recommendation, PlatformMetrics, DailyMetric } from '@/types';
+import { Campaign, AdSet, Ad, AIRecommendation, TeamMember, Invoice, Report, Tenant, ChartDataPoint, ChatMessage } from '@/types';
 
 export const campaigns: Campaign[] = [
-  {
-    id: '1', name: 'Summer Sale 2026', platform: 'facebook', status: 'active',
-    budget: 5000, spent: 3420, impressions: 245000, clicks: 8200,
-    conversions: 340, ctr: 3.35, cpc: 0.42, cpa: 10.06, roas: 4.2,
-    startDate: '2026-03-01', endDate: '2026-03-31'
-  },
-  {
-    id: '2', name: 'Brand Awareness TikTok', platform: 'tiktok', status: 'active',
-    budget: 3000, spent: 1890, impressions: 520000, clicks: 15600,
-    conversions: 210, ctr: 3.0, cpc: 0.12, cpa: 9.0, roas: 3.8,
-    startDate: '2026-03-05', endDate: '2026-04-05'
-  },
-  {
-    id: '3', name: 'Google Search - Products', platform: 'google', status: 'active',
-    budget: 8000, spent: 5640, impressions: 180000, clicks: 12600,
-    conversions: 580, ctr: 7.0, cpc: 0.45, cpa: 9.72, roas: 5.1,
-    startDate: '2026-02-15', endDate: '2026-03-31'
-  },
-  {
-    id: '4', name: 'Snap Story Ads', platform: 'snapchat', status: 'active',
-    budget: 2000, spent: 1240, impressions: 310000, clicks: 6200,
-    conversions: 95, ctr: 2.0, cpc: 0.20, cpa: 13.05, roas: 2.9,
-    startDate: '2026-03-10', endDate: '2026-04-10'
-  },
-  {
-    id: '5', name: 'Retargeting - Cart Abandoners', platform: 'facebook', status: 'active',
-    budget: 2500, spent: 1870, impressions: 85000, clicks: 4250,
-    conversions: 280, ctr: 5.0, cpc: 0.44, cpa: 6.68, roas: 6.8,
-    startDate: '2026-03-01', endDate: '2026-03-31'
-  },
-  {
-    id: '6', name: 'TikTok Influencer Collab', platform: 'tiktok', status: 'paused',
-    budget: 4000, spent: 2100, impressions: 680000, clicks: 20400,
-    conversions: 150, ctr: 3.0, cpc: 0.10, cpa: 14.0, roas: 2.4,
-    startDate: '2026-02-20', endDate: '2026-03-20'
-  },
-  {
-    id: '7', name: 'Google Display Network', platform: 'google', status: 'active',
-    budget: 3500, spent: 2180, impressions: 420000, clicks: 5040,
-    conversions: 120, ctr: 1.2, cpc: 0.43, cpa: 18.17, roas: 2.1,
-    startDate: '2026-03-01', endDate: '2026-04-01'
-  },
-  {
-    id: '8', name: 'Snapchat AR Lens Promo', platform: 'snapchat', status: 'completed',
-    budget: 5000, spent: 5000, impressions: 890000, clicks: 17800,
-    conversions: 320, ctr: 2.0, cpc: 0.28, cpa: 15.63, roas: 3.2,
-    startDate: '2026-02-01', endDate: '2026-02-28'
-  },
-  {
-    id: '9', name: 'Facebook Lead Gen', platform: 'facebook', status: 'draft',
-    budget: 6000, spent: 0, impressions: 0, clicks: 0,
-    conversions: 0, ctr: 0, cpc: 0, cpa: 0, roas: 0,
-    startDate: '2026-04-01', endDate: '2026-04-30'
-  },
-  {
-    id: '10', name: 'Google Shopping Ads', platform: 'google', status: 'active',
-    budget: 10000, spent: 7200, impressions: 350000, clicks: 21000,
-    conversions: 890, ctr: 6.0, cpc: 0.34, cpa: 8.09, roas: 7.2,
-    startDate: '2026-03-01', endDate: '2026-03-31'
-  }
+  { id: '1', name: 'Summer Sale 2025', platform: 'meta', status: 'active', budget: 5000, spend: 3245, impressions: 450000, clicks: 12500, conversions: 320, roas: 4.2, cpa: 10.14, ctr: 2.78, frequency: 2.1, startDate: '2025-06-01', aiOptimized: true },
+  { id: '2', name: 'Brand Awareness Q3', platform: 'google', status: 'active', budget: 8000, spend: 6120, impressions: 890000, clicks: 23400, conversions: 156, roas: 2.8, cpa: 39.23, ctr: 2.63, frequency: 3.4, startDate: '2025-07-01', endDate: '2025-09-30', aiOptimized: true },
+  { id: '3', name: 'App Install Campaign', platform: 'tiktok', status: 'active', budget: 3000, spend: 2180, impressions: 1200000, clicks: 45000, conversions: 890, roas: 5.1, cpa: 2.45, ctr: 3.75, frequency: 1.8, startDate: '2025-08-15', aiOptimized: false },
+  { id: '4', name: 'Holiday Retargeting', platform: 'meta', status: 'paused', budget: 2000, spend: 1450, impressions: 180000, clicks: 5600, conversions: 210, roas: 6.8, cpa: 6.90, ctr: 3.11, frequency: 4.2, startDate: '2025-11-01', endDate: '2025-12-31', aiOptimized: true },
+  { id: '5', name: 'Product Launch', platform: 'snapchat', status: 'active', budget: 4000, spend: 2890, impressions: 670000, clicks: 18900, conversions: 445, roas: 3.9, cpa: 6.49, ctr: 2.82, frequency: 2.6, startDate: '2025-09-01', aiOptimized: false },
+  { id: '6', name: 'Local Store Traffic', platform: 'google', status: 'active', budget: 1500, spend: 980, impressions: 125000, clicks: 4200, conversions: 89, roas: 3.2, cpa: 11.01, ctr: 3.36, frequency: 1.5, startDate: '2025-10-01', aiOptimized: true },
+  { id: '7', name: 'Video Engagement', platform: 'tiktok', status: 'paused', budget: 2500, spend: 1800, impressions: 980000, clicks: 35000, conversions: 120, roas: 1.9, cpa: 15.0, ctr: 3.57, frequency: 2.0, startDate: '2025-07-15', aiOptimized: false },
+  { id: '8', name: 'Lead Gen Finance', platform: 'meta', status: 'active', budget: 6000, spend: 4500, impressions: 520000, clicks: 15800, conversions: 678, roas: 7.2, cpa: 6.64, ctr: 3.04, frequency: 3.1, startDate: '2025-08-01', aiOptimized: true },
+  { id: '9', name: 'Spring Collection', platform: 'snapchat', status: 'deleted', budget: 3500, spend: 3500, impressions: 410000, clicks: 11200, conversions: 234, roas: 2.5, cpa: 14.96, ctr: 2.73, frequency: 3.8, startDate: '2025-03-01', endDate: '2025-05-31', aiOptimized: false },
+  { id: '10', name: 'Back to School', platform: 'google', status: 'active', budget: 4500, spend: 3200, impressions: 780000, clicks: 21000, conversions: 512, roas: 5.6, cpa: 6.25, ctr: 2.69, frequency: 2.3, startDate: '2025-08-01', endDate: '2025-09-15', aiOptimized: true },
 ];
 
-export const recommendations: Recommendation[] = [
-  {
-    id: 'r1', campaignId: '1', campaignName: 'Summer Sale 2026', platform: 'facebook',
-    type: 'budget', priority: 'high',
-    title: 'Increase budget by 30% for Summer Sale campaign',
-    description: 'This campaign has a strong ROAS of 4.2x and is spending efficiently. Increasing budget could capture more conversions while maintaining performance. Current daily spend is well below the target audience capacity.',
-    expectedImpact: '+102 conversions, +$3,400 revenue estimated',
-    status: 'pending', createdAt: '2026-03-18T10:00:00Z'
-  },
-  {
-    id: 'r2', campaignId: '4', campaignName: 'Snap Story Ads', platform: 'snapchat',
-    type: 'creative', priority: 'high',
-    title: 'Refresh ad creatives - engagement declining',
-    description: 'CTR has dropped 15% over the past week, suggesting ad fatigue. Consider introducing new video creatives or testing different hooks in the first 3 seconds to recapture audience attention.',
-    expectedImpact: '+0.5% CTR improvement, -$2.10 CPA reduction',
-    status: 'pending', createdAt: '2026-03-18T09:30:00Z'
-  },
-  {
-    id: 'r3', campaignId: '7', campaignName: 'Google Display Network', platform: 'google',
-    type: 'targeting', priority: 'medium',
-    title: 'Narrow audience targeting to reduce wasted spend',
-    description: 'The Display Network campaign has a low CTR of 1.2% and high CPA of $18.17. Recommend excluding low-performing placements and adding more specific audience segments to improve efficiency.',
-    expectedImpact: '-35% CPA reduction, +1.5x ROAS improvement',
-    status: 'pending', createdAt: '2026-03-17T15:00:00Z'
-  },
-  {
-    id: 'r4', campaignId: '6', campaignName: 'TikTok Influencer Collab', platform: 'tiktok',
-    type: 'bidding', priority: 'medium',
-    title: 'Switch to value-based bidding strategy',
-    description: 'Current CPA-based bidding is not optimizing for high-value conversions. Switching to value-based bidding could improve ROAS from 2.4x to an estimated 3.5x by prioritizing users with higher purchase intent.',
-    expectedImpact: '+$1,200 revenue with same spend',
-    status: 'pending', createdAt: '2026-03-17T12:00:00Z'
-  },
-  {
-    id: 'r5', campaignId: '10', campaignName: 'Google Shopping Ads', platform: 'google',
-    type: 'budget', priority: 'low',
-    title: 'Reallocate budget from Display to Shopping',
-    description: 'Google Shopping Ads are performing at 7.2x ROAS vs 2.1x for Display Network. Consider shifting 20% of Display budget to Shopping to maximize overall return.',
-    expectedImpact: '+$5,800 additional revenue estimated',
-    status: 'pending', createdAt: '2026-03-16T08:00:00Z'
-  },
-  {
-    id: 'r6', campaignId: '2', campaignName: 'Brand Awareness TikTok', platform: 'tiktok',
-    type: 'schedule', priority: 'low',
-    title: 'Optimize ad scheduling for peak hours',
-    description: 'Data shows 68% of conversions occur between 6PM-11PM. Concentrating budget during peak hours could improve efficiency by reducing spend during low-converting periods.',
-    expectedImpact: '-12% CPA, +18% conversion rate during peak',
-    status: 'applied', createdAt: '2026-03-15T14:00:00Z'
-  }
+export const adSets: AdSet[] = [
+  { id: 'as1', campaignId: '1', name: 'Lookalike - Purchasers', status: 'active', spend: 1800, impressions: 250000, clicks: 7200, conversions: 185 },
+  { id: 'as2', campaignId: '1', name: 'Interest - Fashion', status: 'active', spend: 1000, impressions: 130000, clicks: 3800, conversions: 98 },
+  { id: 'as3', campaignId: '1', name: 'Retargeting - Cart Abandoners', status: 'active', spend: 445, impressions: 70000, clicks: 1500, conversions: 37 },
 ];
 
-export const platformMetrics: PlatformMetrics[] = [
-  { platform: 'facebook', totalSpend: 5290, totalImpressions: 330000, totalClicks: 12450, totalConversions: 620, avgCTR: 3.77, avgCPC: 0.42, avgROAS: 5.2, campaigns: 3 },
-  { platform: 'tiktok', totalSpend: 3990, totalImpressions: 1200000, totalClicks: 36000, totalConversions: 360, avgCTR: 3.0, avgCPC: 0.11, avgROAS: 3.1, campaigns: 2 },
-  { platform: 'google', totalSpend: 15020, totalImpressions: 950000, totalClicks: 38640, totalConversions: 1590, avgCTR: 4.07, avgCPC: 0.39, avgROAS: 4.8, campaigns: 3 },
-  { platform: 'snapchat', totalSpend: 6240, totalImpressions: 1200000, totalClicks: 24000, totalConversions: 415, avgCTR: 2.0, avgCPC: 0.26, avgROAS: 3.05, campaigns: 2 }
+export const ads: Ad[] = [
+  { id: 'ad1', adSetId: 'as1', campaignId: '1', name: 'Summer Vibes Video', type: 'video', thumbnailUrl: '', status: 'active', spend: 950, impressions: 130000, clicks: 3800, conversions: 98, ctr: 2.92, cpa: 9.69 },
+  { id: 'ad2', adSetId: 'as1', campaignId: '1', name: 'Testimonial Carousel', type: 'carousel', thumbnailUrl: '', status: 'active', spend: 850, impressions: 120000, clicks: 3400, conversions: 87, ctr: 2.83, cpa: 9.77 },
+  { id: 'ad3', adSetId: 'as2', campaignId: '1', name: 'Flash Sale Banner', type: 'image', thumbnailUrl: '', status: 'active', spend: 520, impressions: 75000, clicks: 2100, conversions: 54, ctr: 2.80, cpa: 9.63 },
+  { id: 'ad4', adSetId: 'as2', campaignId: '1', name: 'Product Showcase', type: 'image', thumbnailUrl: '', status: 'paused', spend: 480, impressions: 55000, clicks: 1700, conversions: 44, ctr: 3.09, cpa: 10.91 },
+  { id: 'ad5', adSetId: 'as3', campaignId: '1', name: 'Reminder Video', type: 'video', thumbnailUrl: '', status: 'active', spend: 445, impressions: 70000, clicks: 1500, conversions: 37, ctr: 2.14, cpa: 12.03 },
 ];
 
-export const dailyMetrics: DailyMetric[] = Array.from({ length: 30 }, (_, i) => {
-  const date = new Date(2026, 2, i + 1);
-  const base = 800 + Math.sin(i * 0.3) * 200 + Math.random() * 150;
+export const recommendations: AIRecommendation[] = [
+  { id: 'r1', campaignId: '1', type: 'budget', message: 'Increase budget for "Summer Sale 2025" by 15% to maximize ROAS during peak hours.', impact: '+12% conversions estimated', confidence: 0.89, applied: false },
+  { id: 'r2', campaignId: '7', type: 'pause', message: 'Pause "Video Engagement" campaign — ROAS has dropped below 2.0 for 5 consecutive days.', impact: 'Save $120/day', confidence: 0.92, applied: false },
+  { id: 'r3', campaignId: '3', type: 'creative', message: 'Your TikTok video ads with UGC style perform 2.3x better. Create more UGC content for "App Install Campaign".', impact: '+35% CTR potential', confidence: 0.85, applied: false },
+  { id: 'r4', campaignId: '8', type: 'audience', message: 'Users aged 25-34 convert 40% better on "Lead Gen Finance". Increase bid for this demographic.', impact: '+18% conversion rate', confidence: 0.91, applied: false },
+  { id: 'r5', campaignId: '6', type: 'enable', message: 'Enable ad scheduling for "Local Store Traffic" — performance peaks between 10am-2pm.', impact: '+22% ROAS improvement', confidence: 0.87, applied: false },
+];
+
+export const chartData: ChartDataPoint[] = Array.from({ length: 30 }, (_, i) => {
+  const date = new Date(2025, 7, i + 1);
+  const base = Math.sin(i / 5) * 500 + 2000;
   return {
     date: date.toISOString().split('T')[0],
-    impressions: Math.round(38000 + Math.sin(i * 0.5) * 8000 + Math.random() * 5000),
-    clicks: Math.round(1200 + Math.sin(i * 0.4) * 300 + Math.random() * 200),
-    conversions: Math.round(45 + Math.sin(i * 0.3) * 15 + Math.random() * 10),
-    spend: Math.round(base * 100) / 100,
-    revenue: Math.round(base * (3.5 + Math.random()) * 100) / 100,
+    spend: Math.round(base + Math.random() * 300),
+    clicks: Math.round((base * 3.5) + Math.random() * 1000),
+    conversions: Math.round((base * 0.12) + Math.random() * 30),
+    impressions: Math.round((base * 120) + Math.random() * 50000),
   };
 });
 
-export const aiChatSuggestions = [
-  "Which campaign has the best ROAS this month?",
-  "How can I reduce CPA on my Snapchat campaigns?",
-  "Compare Facebook vs TikTok performance",
-  "What's the optimal budget split across platforms?",
-  "Show me underperforming campaigns that need attention",
-  "Predict next week's performance based on current trends"
+export const teamMembers: TeamMember[] = [
+  { id: 't1', name: 'Sarah Chen', email: 'sarah@company.com', role: 'owner', status: 'active', joinedAt: '2025-01-15' },
+  { id: 't2', name: 'Mike Rodriguez', email: 'mike@company.com', role: 'admin', status: 'active', joinedAt: '2025-02-20' },
+  { id: 't3', name: 'Emily Park', email: 'emily@company.com', role: 'member', status: 'active', joinedAt: '2025-03-10' },
+  { id: 't4', name: 'James Wilson', email: 'james@company.com', role: 'viewer', status: 'pending', joinedAt: '2025-08-01' },
+  { id: 't5', name: 'Lisa Thompson', email: 'lisa@company.com', role: 'member', status: 'active', joinedAt: '2025-05-18' },
+];
+
+export const invoices: Invoice[] = [
+  { id: 'inv1', date: '2025-08-01', amount: 99, status: 'paid', pdfUrl: '#' },
+  { id: 'inv2', date: '2025-07-01', amount: 99, status: 'paid', pdfUrl: '#' },
+  { id: 'inv3', date: '2025-06-01', amount: 99, status: 'paid', pdfUrl: '#' },
+  { id: 'inv4', date: '2025-05-01', amount: 49, status: 'paid', pdfUrl: '#' },
+  { id: 'inv5', date: '2025-04-01', amount: 49, status: 'paid', pdfUrl: '#' },
+];
+
+export const reports: Report[] = [
+  { id: 'rp1', name: 'Campaign Performance Summary', type: 'performance', createdAt: '2025-08-15', schedule: 'weekly' },
+  { id: 'rp2', name: 'Creative Performance', type: 'creative', createdAt: '2025-08-10' },
+  { id: 'rp3', name: 'Audience Insights', type: 'audience', createdAt: '2025-08-05', schedule: 'monthly' },
+  { id: 'rp4', name: 'Hourly/Dayparting Analysis', type: 'dayparting', createdAt: '2025-07-28' },
+];
+
+export const tenants: Tenant[] = [
+  { id: 'tn1', orgName: 'Acme Corp', ownerEmail: 'admin@acme.com', plan: 'agency', status: 'active', createdAt: '2025-01-10', memberCount: 12, adAccountCount: 8, mrr: 299 },
+  { id: 'tn2', orgName: 'StartupXYZ', ownerEmail: 'founder@startupxyz.com', plan: 'pro', status: 'trialing', createdAt: '2025-08-01', memberCount: 3, adAccountCount: 2, mrr: 99 },
+  { id: 'tn3', orgName: 'BigRetail Inc', ownerEmail: 'marketing@bigretail.com', plan: 'agency', status: 'active', createdAt: '2025-03-15', memberCount: 25, adAccountCount: 15, mrr: 299 },
+  { id: 'tn4', orgName: 'Local Bakery', ownerEmail: 'owner@localbakery.com', plan: 'basic', status: 'past_due', createdAt: '2025-06-20', memberCount: 1, adAccountCount: 1, mrr: 29 },
+  { id: 'tn5', orgName: 'TechFlow', ownerEmail: 'cto@techflow.io', plan: 'pro', status: 'active', createdAt: '2025-04-05', memberCount: 7, adAccountCount: 4, mrr: 99 },
+  { id: 'tn6', orgName: 'FashionHub', ownerEmail: 'hello@fashionhub.co', plan: 'pro', status: 'active', createdAt: '2025-05-12', memberCount: 5, adAccountCount: 3, mrr: 99 },
+];
+
+export const chatMessages: ChatMessage[] = [
+  { id: 'cm1', role: 'assistant', content: 'Hello! I\'m your AI advertising assistant. I can help you analyze campaigns, suggest optimizations, and answer questions about your ad performance. What would you like to know?', timestamp: '2025-08-20T09:00:00Z' },
+];
+
+export const suggestedPrompts = [
+  'Why did my ROAS drop yesterday?',
+  'Show me top 3 underperforming ads',
+  'Increase budget for Summer Sale by 10%',
+  'Compare Google vs Meta performance this month',
+  'Which creative type performs best on TikTok?',
+  'What\'s my best performing audience segment?',
 ];
