@@ -3,40 +3,122 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WooCommerce to Shopify</title>
+  <title>WooCommerce Scraper</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="container">
-    <h1>Woo &rarr; Shopify</h1>
-    <p class="subtitle">Scrape WooCommerce products &amp; export to Shopify CSV</p>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <img src="icons/icon48.png" alt="" class="header-icon">
+        <div>
+          <h1>WooCommerce Scraper</h1>
+          <p class="header-sub">Extract &amp; export product data</p>
+        </div>
+      </div>
+      <div class="header-badge" id="site-status">Not detected</div>
+    </header>
 
+    <!-- Status bar -->
     <div id="status" class="status hidden"></div>
 
-    <div class="section">
-      <h2>Step 1: Scrape Products</h2>
-      <p class="hint">Navigate to a WooCommerce shop/product page, then click scrape.</p>
-      <div class="btn-row">
-        <button id="btn-scrape-page" class="btn btn-primary">Scrape This Page</button>
-        <button id="btn-scrape-all" class="btn btn-secondary">Scrape All Pages</button>
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <button id="btn-scrape-page" class="btn btn-primary btn-sm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9m-9 9a9 9 0 019-9"/></svg>
+          Scrape Page
+        </button>
+        <button id="btn-scrape-all" class="btn btn-secondary btn-sm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          Scrape All
+        </button>
+      </div>
+      <button id="btn-clear" class="btn btn-ghost btn-sm" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+        Clear
+      </button>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="filters">
+      <div class="search-wrap">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" id="search-input" class="search-input" placeholder="Search products...">
+      </div>
+      <div class="filter-row">
+        <select id="filter-category" class="filter-select">
+          <option value="">All Categories</option>
+        </select>
+        <select id="filter-type" class="filter-select">
+          <option value="">All Types</option>
+          <option value="simple">Simple</option>
+          <option value="variable">Variable</option>
+        </select>
       </div>
     </div>
 
-    <div class="section">
-      <h2>Step 2: Review</h2>
-      <div id="product-count" class="product-count">0 products scraped</div>
-      <div id="product-list" class="product-list"></div>
+    <!-- Product count & selection -->
+    <div class="table-header">
+      <div class="table-header-left">
+        <label class="checkbox-label">
+          <input type="checkbox" id="select-all" checked>
+          <span id="product-count">0 products</span>
+        </label>
+      </div>
+      <span id="selected-count" class="selected-count"></span>
     </div>
 
-    <div class="section">
-      <h2>Step 3: Export</h2>
-      <div class="btn-row">
-        <button id="btn-export" class="btn btn-success" disabled>Download Shopify CSV</button>
-        <button id="btn-clear" class="btn btn-danger" disabled>Clear All</button>
+    <!-- Product table -->
+    <div class="table-wrap">
+      <table class="product-table" id="product-table">
+        <thead>
+          <tr>
+            <th class="col-check"></th>
+            <th class="col-img"></th>
+            <th class="col-name">Product</th>
+            <th class="col-type">Type</th>
+            <th class="col-price">Price</th>
+            <th class="col-cat">Category</th>
+          </tr>
+        </thead>
+        <tbody id="product-tbody"></tbody>
+      </table>
+      <div id="empty-state" class="empty-state">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        <p>No products scraped yet</p>
+        <p class="empty-hint">Navigate to a WooCommerce store and click "Scrape Page"</p>
       </div>
     </div>
+
+    <!-- Export section -->
+    <div class="export-bar">
+      <div class="export-buttons">
+        <button id="btn-export-shopify" class="btn btn-export" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Shopify CSV
+        </button>
+        <button id="btn-export-woo" class="btn btn-export" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          WooCommerce CSV
+        </button>
+        <button id="btn-export-excel" class="btn btn-export" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Excel CSV
+        </button>
+      </div>
+      <button id="btn-export-all" class="btn btn-primary btn-sm" disabled>Export All</button>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span id="footer-info">Ready</span>
+    </footer>
   </div>
+
   <script src="shopify-csv.js"></script>
+  <script src="woocommerce-csv.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

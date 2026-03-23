@@ -3,7 +3,7 @@
   "name": "WooCommerce to Shopify Exporter",
   "version": "1.0.0",
   "description": "Scrape WooCommerce product pages and export them as Shopify-compatible CSV files.",
-  "permissions": ["activeTab", "scripting", "downloads"],
+  "permissions": ["activeTab", "scripting", "downloads", "storage"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

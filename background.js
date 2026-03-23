@@ -38,6 +38,11 @@ async function crawlAllPages(tabId, startUrl) {
       return result.products;
     }
 
+    if (result.type === "api") {
+      // Products came fully formed from the WC Store API
+      return result.products;
+    }
+
     result.products.forEach((p) => {
       if (p.url && !allProductUrls.includes(p.url)) {
         allProductUrls.push(p.url);
