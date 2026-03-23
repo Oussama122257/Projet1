@@ -38,7 +38,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const response = await chrome.tabs.sendMessage(tab.id, { action: "scrape_page" });
 
-      if (response.type === "single" && response.products.length > 0) {
+      if (response.type === "api" && response.products.length > 0) {
+        // Products came from WC Store API — already fully detailed
+        addProducts(response.products);
+        showStatus(`Scraped ${response.products.length} products via API!`, "success");
+      } else if (response.type === "single" && response.products.length > 0) {
         addProducts(response.products);
         showStatus(`Scraped 1 product successfully!`, "success");
       } else if (response.type === "list" && response.products.length > 0) {
@@ -76,7 +80,19 @@ document.addEventListener("DOMContentLoaded", () => {
         addProducts(response.products);
         showStatus(`Scraped ${response.products.length} products from all pages!`, "success");
       } else {
-        showStatus("No products found.", "error");
+        // Final fallback: try API directly from popup
+        showStatus("DOM scrape empty, trying WC Store API...", "info");
+        try {
+          const apiResponse = await chrome.tabs.sendMessage(tab.id, { action: "scrape_via_api" });
+          if (apiResponse.products && apiResponse.products.length > 0) {
+            addProducts(apiResponse.products);
+            showStatus(`Scraped ${apiResponse.products.length} products via API!`, "success");
+          } else {
+            showStatus("No products found.", "error");
+          }
+        } catch (apiErr) {
+          showStatus("No products found.", "error");
+        }
       }
     } catch (err) {
       showStatus("Error: " + err.message, "error");
