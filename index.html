@@ -781,12 +781,9 @@ async function gateLogin() {
   if (!email||!pass) { gateErr('gate-err','أدخل البريد وكلمة المرور'); return; }
   var sb = _getSB();
   if (!sb) {
-    // Try direct init
-    if (typeof window.supabase !== 'undefined') {
-      window._sb = window.supabase.createClient(
-         + SBURL + ,
-         + SBKEY + 
-      );
+    // Try direct init using global config
+    if (typeof window.supabase !== 'undefined' && window._SBURL && window._SBKEY) {
+      window._sb = window.supabase.createClient(window._SBURL, window._SBKEY);
       sb = window._sb;
       window.DB = window.DB || { supabase: sb };
     } else {
@@ -824,8 +821,8 @@ async function gateRegister() {
   if (pass!==pass2)  { gateErr('gate-reg-err','كلمتا المرور مختلفتان'); return; }
   var sb = _getSB();
   if (!sb) {
-    if (typeof window.supabase !== 'undefined') {
-      window._sb = window.supabase.createClient( + SBURL + ,  + SBKEY + );
+    if (typeof window.supabase !== 'undefined' && window._SBURL && window._SBKEY) {
+      window._sb = window.supabase.createClient(window._SBURL, window._SBKEY);
       sb = window._sb;
     } else { gateErr('gate-reg-err','⏳ جاري التحميل'); return; }
   }
@@ -870,6 +867,16 @@ async function doLogout() {
 document.addEventListener('keydown', function(e) {
   if (!_authed && e.key==='Escape') e.preventDefault();
 });
+// Auto-login: check for existing session on page load
+(function autoLogin() {
+  var sb = _getSB();
+  if (!sb) { setTimeout(autoLogin, 100); return; }
+  sb.auth.getSession().then(function(res) {
+    if (res.data && res.data.session && res.data.session.user) {
+      _onSuccess(res.data.session.user);
+    }
+  }).catch(function(){});
+})();
 </script>
 <!-- ═══ AUTH GATE — covers entire screen until logged in ═══ -->
 <div id="onboard" style="align-items:center;justify-content:center;overflow-y:auto;padding:20px 0;">
