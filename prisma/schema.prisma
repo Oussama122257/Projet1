@@ -1,0 +1,330 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== SHOP & AUTH ====================
+
+model Shop {
+  id              String    @id @default(cuid())
+  shopifyDomain   String    @unique
+  shopifyToken    String
+  name            String?
+  email           String?
+  phone           String?
+  plan            Plan      @default(FREE)
+  currency        String    @default("DZD")
+  language        String    @default("fr")
+  timezone        String    @default("Africa/Algiers")
+  smsCredits      Int       @default(0)
+  whatsappCredits Int       @default(0)
+  isActive        Boolean   @default(true)
+  installedAt     DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  orders          Order[]
+  carrierConfigs  CarrierConfig[]
+  teamMembers     TeamMember[]
+  notifications   NotificationTemplate[]
+  webhooks        WebhookLog[]
+  smsLogs         SmsLog[]
+  analytics       AnalyticsSnapshot[]
+
+  @@index([shopifyDomain])
+}
+
+enum Plan {
+  FREE
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  shopId    String
+  name      String
+  email     String
+  role      TeamRole @default(AGENT)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shop   Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orders Order[] @relation("AssignedAgent")
+
+  @@unique([shopId, email])
+  @@index([shopId])
+}
+
+enum TeamRole {
+  ADMIN
+  MANAGER
+  AGENT
+}
+
+// ==================== CARRIERS ====================
+
+model CarrierConfig {
+  id           String      @id @default(cuid())
+  shopId       String
+  carrierCode  CarrierCode
+  apiKey       String
+  apiSecret    String?
+  apiId        String?
+  isActive     Boolean     @default(true)
+  isDefault    Boolean     @default(false)
+  webhookUrl   String?
+  metadata     Json?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, carrierCode])
+  @@index([shopId])
+}
+
+enum CarrierCode {
+  YALIDINE
+  ZR_EXPRESS
+  MAYSTRO
+  PROCOLIS
+  DHD
+  NOEST
+  ECOTRACK
+  GUEPEX
+  CONNEXLOG
+  GOLIVRI
+  ROCKET_DZ
+  FASTMAIL_DZ
+}
+
+// ==================== ORDERS ====================
+
+model Order {
+  id                 String        @id @default(cuid())
+  shopId             String
+  shopifyOrderId     String?
+  shopifyOrderNumber String?
+  assignedAgentId    String?
+
+  // Customer info
+  customerName       String
+  customerPhone      String
+  customerPhone2     String?
+  customerEmail      String?
+  customerWilaya     String
+  customerCommune    String
+  customerAddress    String
+  customerNote       String?
+
+  // Order details
+  productName        String
+  productVariant     String?
+  quantity           Int           @default(1)
+  price              Float
+  shippingPrice      Float         @default(0)
+  totalPrice         Float
+  isCOD              Boolean       @default(true)
+  codAmount          Float?
+
+  // Delivery
+  carrierCode        CarrierCode?
+  carrierTrackingId  String?
+  carrierLabel       String?
+  carrierBordereau   String?
+  estimatedDelivery  DateTime?
+  deliveredAt        DateTime?
+  weight             Float?
+
+  // Status
+  status             OrderStatus   @default(NEW)
+  confirmationStatus ConfirmStatus @default(PENDING)
+  returnReason       String?
+
+  // Flags
+  isExpress          Boolean       @default(false)
+  isPaid             Boolean       @default(false)
+  isArchived         Boolean       @default(false)
+
+  // Source
+  source             OrderSource   @default(SHOPIFY)
+
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  shop          Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  assignedAgent TeamMember?    @relation("AssignedAgent", fields: [assignedAgentId], references: [id])
+  statusHistory StatusHistory[]
+  smsLogs       SmsLog[]
+
+  @@unique([shopId, shopifyOrderId])
+  @@index([shopId, status])
+  @@index([shopId, createdAt])
+  @@index([carrierTrackingId])
+  @@index([customerPhone])
+}
+
+enum OrderStatus {
+  NEW
+  CONFIRMED
+  DISPATCHED
+  IN_TRANSIT
+  AT_WILAYA
+  OUT_FOR_DELIVERY
+  DELIVERED
+  RETURNED
+  CANCELLED
+  FAILED_DELIVERY
+  SCHEDULED_RETURN
+}
+
+enum ConfirmStatus {
+  PENDING
+  CONFIRMED
+  NO_ANSWER
+  POSTPONED
+  CANCELLED
+  DUPLICATE
+}
+
+enum OrderSource {
+  SHOPIFY
+  MANUAL
+  FACEBOOK
+  INSTAGRAM
+  API
+}
+
+model StatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  note      String?
+  source    String?
+  createdAt DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+// ==================== NOTIFICATIONS ====================
+
+model NotificationTemplate {
+  id          String           @id @default(cuid())
+  shopId      String
+  name        String
+  channel     NotifChannel     @default(SMS)
+  trigger     OrderStatus
+  messageAr   String?
+  messageFr   String
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, trigger, channel])
+  @@index([shopId])
+}
+
+enum NotifChannel {
+  SMS
+  WHATSAPP
+  EMAIL
+}
+
+model SmsLog {
+  id        String    @id @default(cuid())
+  shopId    String
+  orderId   String?
+  phone     String
+  message   String
+  channel   NotifChannel @default(SMS)
+  status    SmsStatus @default(PENDING)
+  provider  String?
+  providerMessageId String?
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  shop  Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  order Order? @relation(fields: [orderId], references: [id])
+
+  @@index([shopId])
+  @@index([orderId])
+}
+
+enum SmsStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+}
+
+// ==================== WEBHOOKS & ANALYTICS ====================
+
+model WebhookLog {
+  id        String   @id @default(cuid())
+  shopId    String?
+  source    String
+  event     String
+  payload   Json
+  status    String   @default("received")
+  createdAt DateTime @default(now())
+
+  shop Shop? @relation(fields: [shopId], references: [id])
+
+  @@index([shopId])
+  @@index([source, event])
+}
+
+model AnalyticsSnapshot {
+  id                 String   @id @default(cuid())
+  shopId             String
+  date               DateTime @db.Date
+  totalOrders        Int      @default(0)
+  confirmedOrders    Int      @default(0)
+  dispatchedOrders   Int      @default(0)
+  deliveredOrders    Int      @default(0)
+  returnedOrders     Int      @default(0)
+  cancelledOrders    Int      @default(0)
+  totalRevenue       Float    @default(0)
+  codCollected       Float    @default(0)
+  shippingCost       Float    @default(0)
+  smsSent            Int      @default(0)
+  deliveryRate       Float    @default(0)
+  confirmationRate   Float    @default(0)
+  createdAt          DateTime @default(now())
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, date])
+  @@index([shopId, date])
+}
+
+// ==================== WILAYAS (Algerian Provinces) ====================
+
+model Wilaya {
+  id        Int       @id
+  name      String
+  nameAr    String?
+  communes  Commune[]
+}
+
+model Commune {
+  id        Int    @id
+  name      String
+  nameAr    String?
+  wilayaId  Int
+
+  wilaya Wilaya @relation(fields: [wilayaId], references: [id])
+
+  @@index([wilayaId])
+}
