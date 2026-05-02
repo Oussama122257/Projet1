@@ -10,6 +10,7 @@ import { ApiKeys } from './pages/ApiKeys';
 import { McpConfig } from './pages/McpConfig';
 import { Webhooks } from './pages/Webhooks';
 import { Settings } from './pages/Settings';
+import { FileUpload } from './pages/FileUpload';
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
             <Route path="/video" element={<VideoGen />} />
             <Route path="/image" element={<ImageGen />} />
             <Route path="/music" element={<MusicGen />} />
+            <Route path="/files" element={<FileUpload />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/api-keys" element={<ApiKeys />} />
             <Route path="/mcp" element={<McpConfig />} />

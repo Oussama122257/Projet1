@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Video, Image, Music, ListTodo, Key, Settings, Webhook, Bot, Zap } from 'lucide-react';
+import { LayoutDashboard, Video, Image, Music, ListTodo, Key, Settings, Webhook, Bot, Zap, FolderUp } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const nav = [
@@ -7,6 +7,7 @@ const nav = [
   { to: '/video', icon: Video, label: 'Video Gen' },
   { to: '/image', icon: Image, label: 'Image Gen' },
   { to: '/music', icon: Music, label: 'Music Gen' },
+  { to: '/files', icon: FolderUp, label: 'File Upload' },
   { to: '/tasks', icon: ListTodo, label: 'Tasks' },
   { to: '/api-keys', icon: Key, label: 'API Keys' },
   { to: '/mcp', icon: Bot, label: 'MCP Config' },

@@ -52,6 +52,15 @@ export const api = {
   getWebhooks: () => request<{ webhooks: Webhook[] }>('/webhooks'),
   createWebhook: (url: string, events: string[], secret?: string) => request<Webhook>('/webhooks', { method: 'POST', body: JSON.stringify({ url, events, secret }) }),
   deleteWebhook: (id: string) => request<{ success: boolean }>(`/webhooks/${id}`, { method: 'DELETE' }),
+
+  // File Upload
+  uploadFileByUrl: (fileUrl: string, uploadPath?: string, fileName?: string) =>
+    request<FileUploadResult>('/files/url', { method: 'POST', body: JSON.stringify({ fileUrl, uploadPath, fileName }) }),
+  uploadFileBase64: (base64Data: string, uploadPath?: string, fileName?: string) =>
+    request<FileUploadResult>('/files/base64', { method: 'POST', body: JSON.stringify({ base64Data, uploadPath, fileName }) }),
+  uploadFileStream: (formData: FormData) =>
+    fetch('/api/files/stream', { method: 'POST', body: formData })
+      .then(async r => { const d = await r.json() as FileUploadResult; if (!r.ok) throw new Error((d as unknown as { error?: string }).error || 'Upload failed'); return d; }),
 };
 
 export interface ApiKey { id: string; name: string; key: string; created_at: number; last_used: number | null; is_active: number; }
@@ -65,3 +74,4 @@ export interface KieCredit { data?: { credit?: number; totalCredit?: number; use
 export interface VideoParams { prompt: string; model?: string; aspectRatio?: string; duration?: number; imageUrl?: string; }
 export interface ImageParams { prompt: string; model?: string; aspectRatio?: string; imageUrl?: string; }
 export interface MusicParams { prompt: string; model?: string; customMode?: boolean; title?: string; tags?: string; instrumental?: boolean; }
+export interface FileUploadResult { success: boolean; code: number; msg: string; data?: { fileId: string; fileName: string; originalName: string; fileSize: number; mimeType: string; uploadPath: string; fileUrl: string; downloadUrl: string; uploadTime: string; expiresAt: string; }; }

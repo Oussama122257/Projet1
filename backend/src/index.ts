@@ -9,6 +9,7 @@ import kieRouter from './routes/kie';
 import tasksRouter from './routes/tasks';
 import mcpRouter from './routes/mcp';
 import webhooksRouter from './routes/webhooks';
+import fileUploadRouter from './routes/fileUpload';
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.use('/api/kie', kieRouter);
 app.use('/api/tasks', tasksRouter);
 app.use('/api/mcp', mcpRouter);
 app.use('/api/webhooks', webhooksRouter);
+app.use('/api/files', fileUploadRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', version: '1.0.0', timestamp: new Date().toISOString() });
