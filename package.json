@@ -1,0 +1,18 @@
+{
+  "name": "kie-saas-dashboard",
+  "version": "1.0.0",
+  "description": "Full SaaS dashboard for KIE.ai APIs with MCP integration",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build:backend": "npm run build --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "setup": "cp backend/.env.example backend/.env && echo 'Edit backend/.env to add your KIE_API_KEY'"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
