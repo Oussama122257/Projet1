@@ -66,6 +66,22 @@ services:
       - api
     restart: unless-stopped
 
+  # Chat-driven control layer. Opt-in: `docker compose --profile openclaw up`.
+  # Needs ANTHROPIC_API_KEY + Telegram vars in .env.
+  openclaw:
+    build:
+      context: .
+      dockerfile: openclaw/Dockerfile
+    profiles: ["openclaw"]
+    env_file: .env
+    environment:
+      REELAY_API_BASE: http://api:8000
+    volumes:
+      - ./openclaw:/root/.openclaw
+    depends_on:
+      - api
+    restart: unless-stopped
+
 volumes:
   pgdata:
   media:

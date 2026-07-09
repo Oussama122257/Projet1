@@ -1,0 +1,47 @@
+{
+  "gateway": {
+    "mode": "local",
+    "port": 18789,
+    "bind": "loopback",
+    "auth": { "mode": "token", "token": "${OPENCLAW_GATEWAY_TOKEN}" }
+  },
+
+  "provider": {
+    "type": "anthropic",
+    "apiKey": "${ANTHROPIC_API_KEY}",
+    "model": "claude-opus-4-8"
+  },
+
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "botToken": "${TELEGRAM_BOT_TOKEN}",
+      "allowedChatIds": ["${TELEGRAM_CHAT_ID}"]
+    }
+  },
+
+  "skills": {
+    "load": {
+      "extraDirs": ["/root/.openclaw/workspace/skills"]
+    }
+  },
+
+  "agents": {
+    "defaults": {
+      "skills": [
+        "reelay-status",
+        "reelay-approvals",
+        "reelay-manage-sources",
+        "reelay-manage-destinations"
+      ]
+    },
+    "list": [
+      {
+        "name": "reelay-ops",
+        "description": "Operator for the Reelay Instagram pipeline. Controls it only through the reelayctl CLI.",
+        "system": "You are the Reelay operations assistant. You manage an Instagram video pipeline strictly through the `reelayctl` command via the exec tool. Never run any other shell command. Summarize results clearly for Telegram; surface anything failing or rate-limited first.",
+        "env": { "REELAY_API_BASE": "http://api:8000" }
+      }
+    ]
+  }
+}
