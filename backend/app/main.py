@@ -31,8 +31,9 @@ def health() -> dict:
 
 
 # Routers are registered here as they are built.
-from app.api import accounts, dashboard, videos  # noqa: E402
+from app.api import accounts, dashboard, ops, videos  # noqa: E402
 
 app.include_router(dashboard.router)
 app.include_router(accounts.router)
 app.include_router(videos.router)
+app.include_router(ops.router)
