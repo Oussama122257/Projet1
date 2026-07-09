@@ -5,7 +5,21 @@ S3 API. The bucket/object must be publicly readable so Metricool can fetch it.
 """
 from __future__ import annotations
 
+import tempfile
 from pathlib import Path
+
+
+def download_temp(url: str, name: str) -> Path:
+    """Stream a remote video to a temp file so it can be re-uploaded to staging."""
+    import httpx
+
+    dest = Path(tempfile.gettempdir()) / f"{name}.mp4"
+    with httpx.stream("GET", url, timeout=300, follow_redirects=True) as r:
+        r.raise_for_status()
+        with dest.open("wb") as f:
+            for chunk in r.iter_bytes(1 << 16):
+                f.write(chunk)
+    return dest
 
 
 def upload(cfg: dict, path: Path, key: str | None = None) -> str:

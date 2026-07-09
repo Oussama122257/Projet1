@@ -1,19 +1,55 @@
-# Desktop → Metricool uploader
+# Instagram link → Metricool, automated
 
-A small tool that takes videos from a folder on your desktop, stages each one to
-public storage, and **schedules it as an Instagram Reel in Metricool** at the next
-open slot. It remembers what it already scheduled, so you can just keep dropping
-files into the folder.
+Two ways in, one way out (a scheduled Instagram Reel in Metricool):
+
+1. **`publish_links.py`** — give it an Instagram **link**; it downloads the video via
+   the **Apify** API and schedules it. Fully automated, no storage bucket needed.
+2. **`upload_and_schedule.py`** — point it at a **desktop folder** of videos instead.
+
+Both remember what they've already done, and share the same schedule + Metricool config.
+
+---
+
+## 1. Automated: link → Apify → Metricool  (recommended)
 
 ```
-Desktop folder ──▶ upload to public storage ──▶ Metricool normalize ──▶ schedule Reel
+Instagram link ──▶ Apify (get video URL + caption) ──▶ Metricool normalize ──▶ schedule Reel
 ```
 
-## Why staging is needed
+```bash
+python3 publish_links.py https://www.instagram.com/reel/XXXX/
+python3 publish_links.py --file links.txt          # one link per line
+python3 publish_links.py --file links.txt --dry-run # preview; calls nothing
+python3 publish_links.py https://.../reel/XXXX/ --now  # ~3 min out, not next slot
+python3 publish_links.py --list
+```
 
-Metricool's API **can't take a file upload** — it fetches media from a public,
-non-expiring URL. So each video is uploaded to S3-compatible storage first
-(Cloudflare R2 has a free tier and works great), then handed to Metricool.
+**No storage bucket required.** Metricool's `normalize` step pulls the Apify video
+URL onto Metricool's own servers, so you only need two tokens: **Apify** + **Metricool**.
+(If you'd rather host the file yourself, set `[media] mode = "stage"` and fill in
+`[staging]` — it'll download + re-upload to your bucket first.)
+
+You need in `config.toml`:
+- `[apify]` — your Apify API token (Console → Settings → Integrations).
+- `[metricool]` — token, user id, blog id (the IG profile you publish to).
+- `[schedule]` — timezone, posts/day, first/last hour.
+
+Links are de-duplicated by their shortcode, so re-running a list is safe.
+
+---
+
+## 2. Folder mode: desktop videos → Metricool
+
+Point it at a folder and it schedules every new video file:
+
+```bash
+python3 upload_and_schedule.py --dry-run
+python3 upload_and_schedule.py            # or --watch to keep watching
+```
+
+Folder mode **does** need staging storage, because the files are local: Metricool
+can't take a file upload — it fetches media from a public, non-expiring URL. Fill in
+`[folder]` and `[staging]` (Cloudflare R2 free tier works well).
 
 ## Setup
 
@@ -23,12 +59,13 @@ non-expiring URL. So each video is uploaded to S3-compatible storage first
    python3 -m pip install -r requirements.txt
    ```
 2. **Config:** `cp config.example.toml config.toml` and fill in:
-   - `[folder] path` — your desktop folder of videos.
+   - `[apify]` — your Apify token (needed for link mode).
    - `[metricool]` — token/user id/blog id (Advanced plan → Settings → API; the
      blog id is the Instagram profile you publish to).
    - `[schedule]` — timezone, posts per day, earliest/latest hour.
-   - `[staging]` — an S3-compatible bucket that's **publicly readable** (R2/S3/B2/Wasabi).
-3. **Try it safely first** (uploads and schedules nothing):
+   - `[folder]` + `[staging]` — only for folder mode (an S3-compatible **publicly
+     readable** bucket: R2/S3/B2/Wasabi).
+3. **Try it safely first** (calls nothing):
    ```bash
    python3 upload_and_schedule.py --dry-run
    ```

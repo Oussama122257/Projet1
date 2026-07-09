@@ -12,6 +12,17 @@ done_path = "/Users/you/Desktop/to_publish/_scheduled"
 default_caption = ""
 caption_from_filename = true
 
+[apify]
+# Apify API token (Apify Console -> Settings -> Integrations).
+token = "PASTE_APIFY_TOKEN"
+# The Instagram scraper actor. Default is Apify's official one.
+actor = "apify~instagram-scraper"
+
+[media]
+# "normalize" = hand Apify's video URL straight to Metricool (no storage bucket needed).
+# "stage"     = download the video, re-upload to your [staging] bucket, then schedule.
+mode = "normalize"
+
 [metricool]
 # API access needs a Metricool Advanced plan or above. Settings -> API.
 base_url = "https://app.metricool.com/api"
