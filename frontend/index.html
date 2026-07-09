@@ -92,7 +92,7 @@
 
         <div style="display:flex; flex-direction:column; gap:18px;">
           <div class="card">
-            <div class="card-head"><h2>Telegram activity</h2><span class="sub">@reelay_ops_bot</span></div>
+            <div class="card-head"><h2>Telegram activity</h2><span class="sub" id="tg-handle">@reelay_ops_bot</span></div>
             <div class="feed">
               <div class="feed-item"><div class="fi-ico i-pub">✓</div><div class="fi-body"><p><b>Reels published</b> to your accounts</p><time>live feed</time></div></div>
               <div class="feed-item"><div class="fi-ico i-sched">📅</div><div class="fi-body"><p><b>Approve clips</b> straight from Telegram</p><time>inline buttons</time></div></div>
@@ -101,6 +101,40 @@
             <div class="tg-foot">Connected · alerts + approvals live</div>
           </div>
         </div>
+      </section>
+
+      <!-- OPENCLAW ASSISTANT -->
+      <section class="card">
+        <div class="card-head">
+          <h2>Assistant</h2>
+          <span class="sub">OpenClaw · reelay-ops agent</span>
+          <span class="conn" id="assistant-conn" style="margin-left:auto;">connected</span>
+        </div>
+        <div class="assistant-grid">
+          <div class="chat">
+            <div class="msg user"><div class="who">OM</div><div class="bubble">how's the pipeline?</div></div>
+            <div class="msg bot"><div class="who">R</div><div class="bubble" id="assistant-reply">
+              <span id="assistant-line">Checking…</span>
+              <pre id="assistant-pre"></pre>
+            </div></div>
+            <div class="msg user"><div class="who">OM</div><div class="bubble">pause <code>@meme.motion</code></div></div>
+            <div class="msg bot"><div class="who">R</div><div class="bubble">⏸ Paused <b>@meme.motion</b>. It'll stop scanning until you resume it.</div></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:12px; padding:16px 18px;">
+            <p style="margin:0; font-size:12.5px; color:var(--text-3);">Say any of these on Telegram — the agent runs the scoped <code style="font-family:var(--mono);">reelayctl</code> command for you:</p>
+            <div class="cmd-chips">
+              <span class="chip"><b>status</b></span>
+              <span class="chip">anything to <b>approve</b>?</span>
+              <span class="chip"><b>approve</b> 42</span>
+              <span class="chip"><b>skip</b> 42</span>
+              <span class="chip"><b>pause</b> @handle</span>
+              <span class="chip"><b>add source</b> @handle</span>
+              <span class="chip"><b>add destination</b></span>
+              <span class="chip"><b>retry</b> failures</span>
+            </div>
+          </div>
+        </div>
+        <div class="assistant-status" id="assistant-status"><!-- rendered by app.js --></div>
       </section>
     </div>
   </div>

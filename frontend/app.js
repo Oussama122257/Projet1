@@ -94,13 +94,43 @@ function renderSources(rows) {
   }).join("");
 }
 
+const DEMO_OPS = {
+  sources: { total: 32, active: 31, healthy: 30, cooling_down: ["meme.motion"] },
+  videos: { awaiting_approval: 3, scraped_24h: 57, failed: 0 },
+  posts: { scheduled: 41, published_7d: 146 },
+};
+
+function renderAssistant(ops, live) {
+  const s = ops.sources, v = ops.videos, p = ops.posts;
+  document.getElementById("assistant-line").textContent =
+    `Pipeline healthy — ${s.healthy}/${s.total} source accounts up, ${p.scheduled} posts scheduled.`;
+  const pre = document.getElementById("assistant-pre");
+  pre.textContent =
+    `$ reelayctl status\n` +
+    `Sources: ${s.healthy}/${s.total} healthy, ${s.active} active\n` +
+    (s.cooling_down.length ? `  cooling down: ${s.cooling_down.map((u) => "@" + u).join(", ")}\n` : "") +
+    `Awaiting approval: ${v.awaiting_approval}   scraped 24h: ${v.scraped_24h}   failed: ${v.failed}\n` +
+    `Scheduled: ${p.scheduled}   published 7d: ${p.published_7d}`;
+
+  document.getElementById("assistant-status").innerHTML = [
+    ["Awaiting approval", v.awaiting_approval],
+    ["Scheduled", p.scheduled],
+    ["Published 7d", p.published_7d],
+    ["Cooling down", s.cooling_down.length],
+  ].map(([k, val]) => `<div class="kv"><span>${k}</span><b>${val}</b></div>`).join("");
+
+  const conn = document.getElementById("assistant-conn");
+  conn.textContent = live ? "connected" : "demo";
+}
+
 async function load() {
   let live = false;
-  let overview = DEMO.overview, sources = DEMO.sources;
+  let overview = DEMO.overview, sources = DEMO.sources, ops = DEMO_OPS;
   try {
     overview = await getJSON("/api/overview");
     const s = await getJSON("/api/sources");
     if (Array.isArray(s) && s.length) sources = s;
+    ops = await getJSON("/api/ops/status");
     live = true;
   } catch (_) {
     live = false; // backend not reachable yet — show demo data
@@ -108,6 +138,7 @@ async function load() {
   renderPipeline(overview.pipeline);
   renderStats(overview);
   renderSources(sources);
+  renderAssistant(ops, live);
   document.getElementById("nav-sources").textContent = overview.sources_total ?? sources.length;
 
   const badge = document.getElementById("data-mode");

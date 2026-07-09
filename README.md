@@ -12,9 +12,10 @@ your **destination** Instagram accounts — with **Telegram** alerts and approva
 
 | Path | What it is |
 |---|---|
-| `backend/` | FastAPI API + Celery pipeline (scan → download → Drive → Metricool) |
+| `backend/` | FastAPI API + Celery pipeline (scan → download → Drive → Metricool) + `reelayctl` CLI |
 | `frontend/` | Reelay dashboard (static, fetches the API; demo data fallback) |
-| `docker-compose.yml` | api, worker, beat, redis, postgres, frontend |
+| `openclaw/` | Chat-driven control layer — run the pipeline from Telegram (see `openclaw/README.md`) |
+| `docker-compose.yml` | api, worker, beat, redis, postgres, frontend, openclaw (opt-in profile) |
 | `ROADMAP.md` | architecture, hosting, phased build order, risks |
 | `design/` | UI mockup + UI/UX spec |
 
@@ -39,8 +40,11 @@ docker compose up --build
 ```
 
 - API:       http://localhost:8000  (docs at `/docs`)
-- Dashboard: http://localhost:8080
+- Dashboard: http://localhost:8080  (includes the OpenClaw Assistant panel)
 - Health:    http://localhost:8000/health
+
+Add the chat control layer with `docker compose --profile openclaw up` and then
+message your Telegram bot "status". Details in `openclaw/README.md`.
 
 The dashboard shows **demo data** until the API has real accounts, then flips to
 **live**. Add accounts via the API:

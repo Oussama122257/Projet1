@@ -233,3 +233,25 @@
 .live-badge { font-size: 11px; font-family: var(--mono); padding: 2px 8px; border-radius: 20px; font-weight: 600; }
 .live-badge.on { color: var(--good); background: var(--good-soft); }
 .live-badge.off { color: var(--warn); background: var(--warn-soft); }
+
+/* --- OpenClaw assistant panel --- */
+.assistant-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+.chat { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.msg { display: flex; gap: 10px; align-items: flex-start; }
+.msg .who { width: 26px; height: 26px; border-radius: 7px; flex: none; display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+.msg.user .who { background: var(--surface-2); color: var(--text-2); }
+.msg.bot .who { background: linear-gradient(135deg, var(--accent), #b23c8f); color: #fff; }
+.bubble { background: var(--surface-2); border: 1px solid var(--line); border-radius: 11px; padding: 9px 12px; font-size: 13px; max-width: 88%; }
+.msg.user .bubble { background: transparent; }
+.bubble code { font-family: var(--mono); font-size: 12px; background: var(--ground); padding: 1px 5px; border-radius: 5px; }
+.bubble pre { font-family: var(--mono); font-size: 12px; margin: 6px 0 0; white-space: pre-wrap; color: var(--text-2); }
+.cmd-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 2px; }
+.chip { font-size: 12px; font-family: var(--mono); padding: 5px 10px; border-radius: 20px; border: 1px solid var(--line-strong); color: var(--text-2); background: var(--surface-2); }
+.chip b { color: var(--accent); font-weight: 600; }
+.assistant-status { display: flex; flex-wrap: wrap; gap: 10px 22px; padding: 14px 18px; border-top: 1px solid var(--line); font-size: 12.5px; }
+.assistant-status .kv { display: flex; flex-direction: column; }
+.assistant-status .kv span { color: var(--text-3); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+.assistant-status .kv b { font-family: var(--mono); font-size: 16px; font-variant-numeric: tabular-nums; }
+.conn { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--flow); font-family: var(--mono); }
+.conn::before { content:""; width: 8px; height: 8px; border-radius: 50%; background: var(--flow); }
+@media (max-width: 1080px) { .assistant-grid { grid-template-columns: 1fr; } }
