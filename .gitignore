@@ -20,3 +20,7 @@ media/
 .DS_Store
 .idea/
 .vscode/
+
+# Desktop uploader
+desktop-uploader/config.toml
+desktop-uploader/state.json

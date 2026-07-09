@@ -1,0 +1,41 @@
+# Copy to config.toml and fill in. `config.toml` is gitignored — keep your tokens out of git.
+
+[folder]
+# The folder on your desktop that holds videos to publish.
+path = "/Users/you/Desktop/to_publish"
+extensions = ["mp4", "mov"]
+# After a video is scheduled, move it here so the folder shows what's left.
+# Leave empty to keep files in place (they're still remembered and not re-scheduled).
+done_path = "/Users/you/Desktop/to_publish/_scheduled"
+# Caption for every post. If caption_from_filename is true, the file name (without
+# extension) is used as the caption instead — e.g. "Sunset drone loop.mp4".
+default_caption = ""
+caption_from_filename = true
+
+[metricool]
+# API access needs a Metricool Advanced plan or above. Settings -> API.
+base_url = "https://app.metricool.com/api"
+user_token = "PASTE_YOUR_TOKEN"
+user_id = "PASTE_YOUR_USER_ID"
+# The brand/profile id of the Instagram account you publish to (one per account).
+blog_id = "PASTE_YOUR_BLOG_ID"
+network = "instagram"          # videos publish as Reels
+
+[schedule]
+timezone = "Europe/Paris"
+posts_per_day = 3
+first_slot_hour = 9            # earliest post time (local)
+last_slot_hour = 21           # latest post time (local)
+start_in_days = 1             # begin scheduling from tomorrow
+
+[staging]
+# Metricool must fetch each video from a PUBLIC url, so we upload to S3-compatible
+# storage first. Cloudflare R2 (free tier, public bucket) works well; so do S3/B2/Wasabi.
+provider = "s3"
+endpoint_url = "https://ACCOUNT_ID.r2.cloudflarestorage.com"
+bucket = "reels"
+region = "auto"
+access_key_id = "PASTE_KEY"
+secret_access_key = "PASTE_SECRET"
+# The public base url that serves objects in the bucket (R2 public dev url or your CDN).
+public_base_url = "https://pub-XXXX.r2.dev"
