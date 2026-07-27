@@ -1,0 +1,15 @@
+# Worker (BullMQ) image — includes ffmpeg for media processing
+FROM node:22-alpine
+WORKDIR /app
+RUN apk add --no-cache ffmpeg
+COPY package.json package-lock.json* ./
+RUN npm ci --no-audit --no-fund
+COPY . .
+RUN npx prisma generate
+ENV NODE_ENV=production
+RUN addgroup -S app && adduser -S app -G app && chown -R app:app /app
+USER app
+# Apply pending migrations, then start the worker fleet. Migration deploy is
+# idempotent, so this is safe alongside compose's dedicated migrate service
+# and makes single-click cloud deploys (Render blueprint) self-migrating.
+CMD ["sh", "-c", "npx prisma migrate deploy && exec npx tsx src/workers/index.ts"]

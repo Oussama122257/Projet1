@@ -1,0 +1,95 @@
+# One-click cloud deploy (Render Blueprint).
+# Click "Deploy to Render" in the README (or New → Blueprint in the Render
+# dashboard pointing at this repo). Provisions: managed Postgres, managed
+# Redis, the web app and the worker fleet. Shared secrets are auto-generated
+# once and injected into both services; migrations run automatically on the
+# worker's first boot.
+#
+# After deploy, set the optional integration keys (Apify, Anthropic/OpenAI/
+# Gemini, R2) in the "contentloop-secrets" env group — the app boots without
+# them and features light up as keys are added. Metricool connects in-app.
+
+previews:
+  generation: off
+
+envVarGroups:
+  - name: contentloop-secrets
+    envVars:
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: AI_PROVIDER
+        value: anthropic
+      - key: APIFY_API_TOKEN
+        sync: false
+      - key: APIFY_ACTOR_ID
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+
+databases:
+  - name: contentloop-db
+    plan: basic-256mb
+    postgresMajorVersion: "16"
+
+services:
+  - type: redis
+    name: contentloop-redis
+    plan: starter
+    ipAllowList: [] # internal access only
+
+  - type: web
+    name: contentloop-web
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - fromGroup: contentloop-secrets
+      - key: DATABASE_URL
+        fromDatabase:
+          name: contentloop-db
+          property: connectionString
+      - key: DIRECT_DATABASE_URL
+        fromDatabase:
+          name: contentloop-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: contentloop-redis
+          property: connectionString
+
+  - type: worker
+    name: contentloop-worker
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile.worker
+    autoDeploy: true
+    envVars:
+      - fromGroup: contentloop-secrets
+      - key: DATABASE_URL
+        fromDatabase:
+          name: contentloop-db
+          property: connectionString
+      - key: DIRECT_DATABASE_URL
+        fromDatabase:
+          name: contentloop-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: contentloop-redis
+          property: connectionString

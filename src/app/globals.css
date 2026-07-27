@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-surface text-content-primary antialiased;
+}
+
+::selection {
+  @apply bg-accent/40;
+}
+
+/* Thin scrollbars for the console aesthetic */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: theme("colors.surface.border") transparent;
+}
