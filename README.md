@@ -39,7 +39,30 @@ src/lib/     Domain services (apify, metricool, ai, queue, storage, auth, scorin
 src/workers/ Background workers (BullMQ processors)
 ```
 
-## Running locally
+## One-click setup
+
+**Local (Docker):**
+
+```bash
+./setup.sh
+```
+
+That's it. The script generates secrets, builds the images, boots Postgres (pgvector) + Redis, applies migrations, and starts the web app and worker fleet. Open http://localhost:3000/register when it finishes. On Windows, run it from Git Bash/WSL, or equivalently:
+
+```bash
+cp .env.example .env   # then set AUTH_SECRET + ENCRYPTION_KEY to random 32+ char strings
+docker compose up -d --build
+```
+
+Integration keys (Apify, Anthropic/OpenAI/Gemini, R2) are optional at boot — add them to `.env` later and `docker compose up -d` again; features light up as keys are added. Metricool connects in-app on the Integrations page.
+
+**Cloud (Render Blueprint):**
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Oussama122257/Projet1)
+
+`render.yaml` provisions managed Postgres + Redis, the web service and the worker service in one click; shared secrets are auto-generated and migrations run automatically on first boot. Add integration keys afterwards in the `contentloop-secrets` env group.
+
+## Developing without Docker
 
 ```bash
 cp .env.example .env        # fill in secrets

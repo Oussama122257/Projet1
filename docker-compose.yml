@@ -1,3 +1,26 @@
+# One-click local stack: `./setup.sh` (or: cp .env.example .env && docker compose up -d --build)
+# Boots Postgres(pgvector) + Redis, applies migrations, starts web + workers.
+
+x-app-env: &app-env
+  DATABASE_URL: postgresql://contentloop:contentloop@postgres:5432/contentloop
+  REDIS_URL: redis://redis:6379
+  AUTH_SECRET: ${AUTH_SECRET:?run ./setup.sh or set AUTH_SECRET in .env}
+  ENCRYPTION_KEY: ${ENCRYPTION_KEY:?run ./setup.sh or set ENCRYPTION_KEY in .env}
+  APP_URL: ${APP_URL:-http://localhost:3000}
+  # Integrations & AI (optional at boot — add keys in .env when ready)
+  APIFY_API_TOKEN: ${APIFY_API_TOKEN:-}
+  APIFY_ACTOR_ID: ${APIFY_ACTOR_ID:-}
+  APIFY_INPUT_TEMPLATE: ${APIFY_INPUT_TEMPLATE:-}
+  APIFY_WEBHOOK_SECRET: ${APIFY_WEBHOOK_SECRET:-}
+  AI_PROVIDER: ${AI_PROVIDER:-anthropic}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+  R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+  R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+  R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+  R2_BUCKET: ${R2_BUCKET:-contentloop-media}
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -9,6 +32,11 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U contentloop -d contentloop"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
 
   redis:
     image: redis:7-alpine
@@ -16,6 +44,48 @@ services:
       - "6379:6379"
     volumes:
       - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: ["npx", "prisma", "migrate", "deploy"]
+    environment: *app-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment: *app-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    environment: *app-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   pgdata:

@@ -4,9 +4,9 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().min(1).default("redis://localhost:6379"),
   AUTH_SECRET: z.string().min(32),
-  ENCRYPTION_KEY: z
-    .string()
-    .regex(/^[0-9a-f]{64}$/i, "ENCRYPTION_KEY must be 32 bytes hex"),
+  // Any high-entropy string >= 32 chars; the AES key is derived via SHA-256,
+  // so auto-generated secrets (openssl rand, Render generateValue) work as-is.
+  ENCRYPTION_KEY: z.string().min(32),
   APP_URL: z.string().url().default("http://localhost:3000"),
 
   APIFY_API_TOKEN: z.string().optional(),

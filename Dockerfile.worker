@@ -9,4 +9,7 @@ RUN npx prisma generate
 ENV NODE_ENV=production
 RUN addgroup -S app && adduser -S app -G app && chown -R app:app /app
 USER app
-CMD ["npx", "tsx", "src/workers/index.ts"]
+# Apply pending migrations, then start the worker fleet. Migration deploy is
+# idempotent, so this is safe alongside compose's dedicated migrate service
+# and makes single-click cloud deploys (Render blueprint) self-migrating.
+CMD ["sh", "-c", "npx prisma migrate deploy && exec npx tsx src/workers/index.ts"]

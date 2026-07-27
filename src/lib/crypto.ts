@@ -1,13 +1,15 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
 import { env } from "@/lib/env";
 
 /**
  * AES-256-GCM encryption for integration tokens at rest (e.g. Metricool
  * userToken). Output format: base64(iv).base64(tag).base64(ciphertext)
+ * The 32-byte key is derived from ENCRYPTION_KEY via SHA-256, so any
+ * high-entropy string works (auto-generated one-click secrets included).
  */
 
 function key(): Buffer {
-  return Buffer.from(env().ENCRYPTION_KEY, "hex");
+  return createHash("sha256").update(env().ENCRYPTION_KEY).digest();
 }
 
 export function encryptSecret(plain: string): string {
