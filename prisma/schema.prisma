@@ -1,0 +1,700 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+// ─── Identity & config ───────────────────────────────────────────────────────
+
+enum Plan {
+  FREE
+  STARTER
+  PRO
+  SCALE
+}
+
+enum AutopilotMode {
+  OFF
+  ASSISTED
+  AUTO
+}
+
+model User {
+  id           String @id @default(cuid())
+  email        String @unique
+  passwordHash String
+  name         String
+  plan         Plan   @default(FREE)
+
+  // AI data-consent flags (privacy model)
+  allowAiAnalysis        Boolean @default(true)
+  allowAiPerformance     Boolean @default(true)
+  allowAiCaptions        Boolean @default(true)
+  allowAiRecommendations Boolean @default(true)
+  preferredAiProvider    String? // "anthropic" | "openai" | "gemini"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sources              Source[]
+  pipelines            Pipeline[]
+  media                Media[]
+  metricoolConnections MetricoolConnection[]
+  brandProfiles        BrandProfile[]
+  experiments          Experiment[]
+  aiInsights           AiInsight[]
+  aiUsage              AiUsage[]
+  aiAuditLogs          AiAuditLog[]
+  settings             Setting[]
+  usageRecords         UsageRecord[]
+  jobs                 Job[]
+  logs                 Log[]
+
+  @@map("users")
+}
+
+model Setting {
+  id     String @id @default(cuid())
+  userId String
+  key    String
+  value  Json
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@map("settings")
+}
+
+model UsageRecord {
+  id          String   @id @default(cuid())
+  userId      String
+  metric      String // "pipelines" | "sources" | "scans" | "posts" | "ai_tokens"
+  periodStart DateTime
+  periodEnd   DateTime
+  used        Int      @default(0)
+  limit       Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, metric, periodStart])
+  @@map("usage_records")
+}
+
+// ─── Ingestion ───────────────────────────────────────────────────────────────
+
+enum SourceStatus {
+  ACTIVE
+  PAUSED
+  ERROR
+  ARCHIVED
+}
+
+model Source {
+  id                      String       @id @default(cuid())
+  userId                  String
+  name                    String
+  url                     String
+  platform                String       @default("instagram")
+  status                  SourceStatus @default(ACTIVE)
+  monitoringFrequencyMins Int          @default(1440)
+  // The user's attestation that they own or have permission to reuse this
+  // source's content. Scanning is refused while this is null.
+  authorizationConfirmedAt DateTime?
+  inputTemplate           Json? // per-source override of the Actor input template
+  lastScanAt              DateTime?
+  videosFound             Int          @default(0)
+  videosImported          Int          @default(0)
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pipelineSources PipelineSource[]
+  media           Media[]
+  apifyRuns       ApifyRun[]
+
+  @@index([userId, status])
+  @@map("sources")
+}
+
+enum ApifyRunStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  TIMED_OUT
+  ABORTED
+}
+
+model ApifyRun {
+  id            String         @id @default(cuid())
+  sourceId      String
+  actorId       String
+  apifyRunId    String?        @unique
+  datasetId     String?
+  status        ApifyRunStatus @default(PENDING)
+  itemsFound    Int            @default(0)
+  itemsImported Int            @default(0)
+  error         String?
+  startedAt     DateTime       @default(now())
+  finishedAt    DateTime?
+
+  source Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId, status])
+  @@map("apify_runs")
+}
+
+enum MediaStatus {
+  DISCOVERED
+  DOWNLOADING
+  STORED
+  PROCESSING
+  READY
+  FAILED
+  ARCHIVED
+}
+
+enum AiAnalysisStatus {
+  PENDING
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+model Media {
+  id              String  @id @default(cuid())
+  userId          String
+  platform        String  @default("instagram")
+  platformMediaId String?
+  sourceId        String?
+  originalUrl     String
+  canonicalUrl    String?
+  storageKey      String?
+  thumbnailKey    String?
+  fileName        String?
+  mimeType        String?
+  fileSize        Int?
+  duration        Float?
+  width           Int?
+  height          Int?
+  caption         String?
+  hashtags        String[]
+  publishedAt     DateTime?
+  contentHash     String?
+  raw             Json?
+
+  aiAnalysisStatus AiAnalysisStatus @default(PENDING)
+  aiScore          Int?
+  status           MediaStatus      @default(DISCOVERED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source         Source?            @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  pipelineMedia  PipelineMedia[]
+  analysis       AiContentAnalysis?
+  embedding      AiEmbedding?
+  scheduledPosts ScheduledPost[]
+
+  @@unique([platform, platformMediaId])
+  @@index([userId, status])
+  @@index([contentHash])
+  @@index([canonicalUrl])
+  @@map("media")
+}
+
+// ─── Pipelines ───────────────────────────────────────────────────────────────
+
+enum PipelineStatus {
+  ACTIVE
+  PAUSED
+  DRAFT
+  ARCHIVED
+}
+
+enum PipelineGoal {
+  REACH
+  ENGAGEMENT
+  FOLLOWERS
+  TRAFFIC
+  CONVERSIONS
+}
+
+model Pipeline {
+  id       String         @id @default(cuid())
+  userId   String
+  name     String
+  status   PipelineStatus @default(DRAFT)
+  goal     PipelineGoal   @default(ENGAGEMENT)
+  timezone String         @default("UTC")
+
+  // AI settings
+  aiEnabled           Boolean       @default(true)
+  aiScoring           Boolean       @default(true)
+  aiCaptionGeneration Boolean       @default(false)
+  aiHashtagGeneration Boolean       @default(false)
+  aiScheduling        Boolean       @default(false)
+  aiRecommendations   Boolean       @default(true)
+  autopilotMode       AutopilotMode @default(OFF)
+  abTestingEnabled    Boolean       @default(false)
+
+  // Diversity rules, e.g. {maxConsecutiveSameSource: 2, maxConsecutiveSameType: 3}
+  diversityRules   Json?
+  // Source allocation, e.g. {"sourceId": 0.5, ...} or {"mode": "ai"}
+  sourceAllocation Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pipelineSources PipelineSource[]
+  pipelineMedia   PipelineMedia[]
+  schedule        Schedule?
+  destination     PipelineDestination?
+  brandProfile    BrandProfile?
+  scheduledPosts  ScheduledPost[]
+  experiments     Experiment[]
+  aiInsights      AiInsight[]
+
+  @@index([userId, status])
+  @@map("pipelines")
+}
+
+model PipelineSource {
+  id               String @id @default(cuid())
+  pipelineId       String
+  sourceId         String
+  allocationWeight Float  @default(1)
+  filters          Json?
+
+  pipeline Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  source   Source   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([pipelineId, sourceId])
+  @@map("pipeline_sources")
+}
+
+enum PipelineMediaStatus {
+  AVAILABLE
+  QUEUED
+  SCHEDULED
+  PUBLISHED
+  SKIPPED
+  REJECTED
+}
+
+model PipelineMedia {
+  id          String              @id @default(cuid())
+  pipelineId  String
+  mediaId     String
+  status      PipelineMediaStatus @default(AVAILABLE)
+  aiScore     Int?
+  priority    Int                 @default(0)
+  reason      String?
+  addedAt     DateTime            @default(now())
+  scheduledAt DateTime?
+  publishedAt DateTime?
+
+  pipeline Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  media    Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([pipelineId, mediaId])
+  @@index([pipelineId, status, priority])
+  @@map("pipeline_media")
+}
+
+// ─── Scheduling & publishing ─────────────────────────────────────────────────
+
+model Schedule {
+  id          String   @id @default(cuid())
+  pipelineId  String   @unique
+  postsPerDay Int      @default(1)
+  aiOptimized Boolean  @default(false)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  pipeline Pipeline       @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  slots    ScheduleSlot[]
+
+  @@map("schedules")
+}
+
+model ScheduleSlot {
+  id         String @id @default(cuid())
+  scheduleId String
+  dayOfWeek  Int // 0-6, Sunday=0; -1 means "every day"
+  time       String // "HH:mm" in pipeline timezone
+
+  schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@map("schedule_slots")
+}
+
+enum ConnectionStatus {
+  CONNECTED
+  EXPIRED
+  ERROR
+  DISCONNECTED
+}
+
+model MetricoolConnection {
+  id                 String           @id @default(cuid())
+  userId             String
+  // Metricool userToken, AES-256-GCM encrypted at rest
+  encryptedUserToken String
+  metricoolUserId    String
+  status             ConnectionStatus @default(CONNECTED)
+  brandsJson         Json? // cached simpleProfiles response
+  lastCheckedAt      DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  destinations PipelineDestination[]
+
+  @@map("metricool_connections")
+}
+
+model PipelineDestination {
+  id           String  @id @default(cuid())
+  pipelineId   String  @unique
+  connectionId String
+  blogId       String // Metricool brand id
+  network      String  @default("instagram")
+  displayName  String?
+  autoPublish  Boolean @default(true)
+
+  pipeline   Pipeline            @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  connection MetricoolConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  intelligenceProfile ContentIntelligenceProfile?
+  scheduledPosts      ScheduledPost[]
+
+  @@map("pipeline_destinations")
+}
+
+enum ScheduledPostStatus {
+  DRAFT
+  PENDING_APPROVAL
+  QUEUED
+  SENT_TO_METRICOOL
+  PUBLISHED
+  FAILED
+  CANCELLED
+}
+
+model ScheduledPost {
+  id              String              @id @default(cuid())
+  pipelineId      String
+  destinationId   String
+  mediaId         String
+  status          ScheduledPostStatus @default(DRAFT)
+  publishAt       DateTime
+  caption         String?
+  hashtags        String[]
+  captionSource   String? // "user" | "ai"
+  metricoolPostId String?
+  experimentVariantId String?
+  error           String?
+  publishedAt     DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  pipeline    Pipeline            @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  destination PipelineDestination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  media       Media               @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  variant     ExperimentVariant?  @relation(fields: [experimentVariantId], references: [id], onDelete: SetNull)
+  performance PostPerformance[]
+
+  @@index([pipelineId, status, publishAt])
+  @@map("scheduled_posts")
+}
+
+model PostPerformance {
+  id              String   @id @default(cuid())
+  scheduledPostId String
+  destinationId   String
+  platformPostId  String?
+  views           Int?
+  reach           Int?
+  likes           Int?
+  comments        Int?
+  shares          Int?
+  saves           Int?
+  watchTime       Float?
+  completionRate  Float?
+  engagementRate  Float?
+  followersGained Int?
+  collectedAt     DateTime @default(now())
+
+  scheduledPost ScheduledPost @relation(fields: [scheduledPostId], references: [id], onDelete: Cascade)
+
+  @@index([scheduledPostId, collectedAt])
+  @@map("post_performance")
+}
+
+// ─── AI ──────────────────────────────────────────────────────────────────────
+
+model AiContentAnalysis {
+  id                   String   @id @default(cuid())
+  mediaId              String   @unique
+  provider             String
+  model                String
+  promptVersion        String   @default("v1")
+  contentType          String?
+  hookType             String?
+  hookStrength         Int?
+  visualQuality        Int?
+  trendScore           Int?
+  audienceFit          Int?
+  originalityScore     Int?
+  reusabilityScore     Int?
+  predictedPerformance Int?
+  confidence           String? // LOW | MEDIUM | HIGH
+  analysisJson         Json
+  createdAt            DateTime @default(now())
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@map("ai_content_analysis")
+}
+
+model AiEmbedding {
+  id        String                       @id @default(cuid())
+  mediaId   String                       @unique
+  provider  String
+  model     String
+  embedding Unsupported("vector(1536)")?
+  createdAt DateTime                     @default(now())
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@map("ai_embeddings")
+}
+
+enum InsightType {
+  CONTENT_PATTERN
+  POSTING_TIME
+  SOURCE_PERFORMANCE
+  HOOK_PATTERN
+  CAPTION_PATTERN
+  AUDIENCE_PATTERN
+  RECOMMENDATION
+}
+
+model AiInsight {
+  id           String      @id @default(cuid())
+  userId       String
+  pipelineId   String?
+  type         InsightType
+  title        String
+  summary      String
+  evidenceJson Json
+  confidence   String // LOW | MEDIUM | HIGH
+  sampleSize   Int
+  dateRangeStart DateTime?
+  dateRangeEnd   DateTime?
+  createdAt    DateTime    @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pipeline Pipeline? @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, createdAt])
+  @@map("ai_insights")
+}
+
+model ContentIntelligenceProfile {
+  id            String   @id @default(cuid())
+  destinationId String   @unique
+  profileJson   Json // learned best formats, durations, hooks, windows, CTAs
+  sampleSize    Int      @default(0)
+  updatedAt     DateTime @updatedAt
+
+  destination PipelineDestination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  @@map("content_intelligence_profiles")
+}
+
+model BrandProfile {
+  id             String  @id @default(cuid())
+  userId         String
+  pipelineId     String? @unique
+  brandName      String?
+  targetAudience String?
+  tone           String?
+  vocabulary     String?
+  wordsToAvoid   String[]
+  ctaStyle       String?
+  emojiUsage     String  @default("moderate") // none | minimal | moderate | heavy
+  language       String  @default("en")
+  dialect        String?
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pipeline Pipeline? @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+
+  @@map("brand_profiles")
+}
+
+model AiUsage {
+  id            String   @id @default(cuid())
+  userId        String
+  pipelineId    String?
+  provider      String
+  model         String
+  requestType   String
+  inputTokens   Int
+  outputTokens  Int
+  estimatedCost Float
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("ai_usage")
+}
+
+model AiAuditLog {
+  id             String   @id @default(cuid())
+  userId         String
+  action         String // e.g. "recommendation", "caption", "schedule", "experiment"
+  subjectType    String? // "media" | "scheduled_post" | "experiment" | ...
+  subjectId      String?
+  reason         String?
+  userAction     String? // "approved" | "rejected" | "edited" | "auto"
+  resultJson     Json?
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("ai_audit_logs")
+}
+
+// ─── Experiments ─────────────────────────────────────────────────────────────
+
+enum ExperimentStatus {
+  DRAFT
+  RUNNING
+  COMPLETED
+  STOPPED
+}
+
+enum ExperimentVariable {
+  CAPTION
+  HOOK
+  POSTING_TIME
+  HASHTAGS
+  THUMBNAIL
+  FORMAT
+  LENGTH
+  CTA
+}
+
+model Experiment {
+  id            String             @id @default(cuid())
+  userId        String
+  pipelineId    String
+  name          String
+  hypothesis    String
+  variable      ExperimentVariable
+  primaryMetric String
+  status        ExperimentStatus   @default(DRAFT)
+  startDate     DateTime?
+  endDate       DateTime?
+  winner        String?
+  confidence    String?
+  createdAt     DateTime           @default(now())
+
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pipeline Pipeline            @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  variants ExperimentVariant[]
+
+  @@index([userId, status])
+  @@map("experiments")
+}
+
+model ExperimentVariant {
+  id            String @id @default(cuid())
+  experimentId  String
+  name          String
+  configuration Json
+
+  experiment     Experiment         @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  results        ExperimentResult[]
+  scheduledPosts ScheduledPost[]
+
+  @@map("experiment_variants")
+}
+
+model ExperimentResult {
+  id               String   @id @default(cuid())
+  experimentId     String
+  variantId        String
+  views            Int?
+  reach            Int?
+  engagement       Float?
+  shares           Int?
+  saves            Int?
+  watchTime        Float?
+  conversionMetric Float?
+  sampleSize       Int      @default(0)
+  computedAt       DateTime @default(now())
+
+  variant ExperimentVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@map("experiment_results")
+}
+
+// ─── Ops ─────────────────────────────────────────────────────────────────────
+
+enum JobStatus {
+  QUEUED
+  ACTIVE
+  COMPLETED
+  FAILED
+  DELAYED
+}
+
+model Job {
+  id         String    @id @default(cuid())
+  userId     String?
+  queue      String
+  name       String
+  bullJobId  String?
+  status     JobStatus @default(QUEUED)
+  attempts   Int       @default(0)
+  payload    Json?
+  error      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([queue, status])
+  @@map("jobs")
+}
+
+model Log {
+  id        String   @id @default(cuid())
+  userId    String?
+  level     String
+  scope     String
+  message   String
+  context   Json?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@map("logs")
+}
