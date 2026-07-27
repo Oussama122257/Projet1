@@ -62,6 +62,8 @@ Integration keys (Apify, Anthropic/OpenAI/Gemini, R2) are optional at boot — a
 
 `render.yaml` provisions managed Postgres + Redis, the web service and the worker service in one click; shared secrets are auto-generated and migrations run automatically on first boot. Add integration keys afterwards in the `contentloop-secrets` env group.
 
+**Cloud (Vercel):** Vercel hosts the web app + API; the worker fleet runs as a small always-on Docker service (Railway/Render/Fly) sharing Neon Postgres + Redis. The repo is Vercel-ready (`vercel.json`, build-time migrations, pooled/direct DB URLs) — follow [docs/13-vercel-deployment.md](docs/13-vercel-deployment.md).
+
 ## Developing without Docker
 
 ```bash
