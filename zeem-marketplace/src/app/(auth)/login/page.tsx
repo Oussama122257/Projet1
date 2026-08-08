@@ -23,7 +23,14 @@ function LoginForm() {
     const res = await signIn("credentials", { phone, password, redirect: false });
     setLoading(false);
     if (res?.error) {
-      setError("Téléphone ou mot de passe incorrect.");
+      // "CredentialsSignin" = wrong phone/password. Anything else means the
+      // server itself failed (missing AUTH_SECRET, unreachable DATABASE_URL,
+      // unseeded database…) — surface that so it's debuggable.
+      setError(
+        res.error === "CredentialsSignin"
+          ? "Téléphone ou mot de passe incorrect."
+          : `Erreur serveur (${res.error}). Vérifiez AUTH_SECRET et DATABASE_URL dans .env, que la base est bien remplie (seed), puis redémarrez le serveur.`
+      );
     } else {
       router.push(params.get("callbackUrl") ?? "/");
       router.refresh();

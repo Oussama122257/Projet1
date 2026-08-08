@@ -10,6 +10,9 @@ export const authConfig = {
     signIn: "/login",
   },
   session: { strategy: "jwt" },
+  // Required for self-hosted deployments (Docker/Render/VPS) — without it,
+  // Auth.js v5 rejects logins with an UntrustedHost error outside Vercel.
+  trustHost: true,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
