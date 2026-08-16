@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: influencer
+      POSTGRES_PASSWORD: influencer
+      POSTGRES_DB: influencer_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U influencer -d influencer_platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot: applies migrations and loads demo data, then exits. Both long-lived
+  # services wait on it so neither starts against an empty schema.
+  migrate:
+    build: .
+    command: sh -c "npx prisma migrate deploy && npm run db:seed"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://influencer:influencer@postgres:5432/influencer_platform?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    build: .
+    command: npm run start
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://influencer:influencer@postgres:5432/influencer_platform?schema=public
+      NEXTAUTH_URL: http://localhost:3000
+      # The scheduler lives in its own container; node-cron has no distributed
+      # lock, so exactly one process may own the schedule.
+      CRON_ENABLED: "false"
+    ports:
+      - "3000:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  worker:
+    build: .
+    command: npm run worker
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://influencer:influencer@postgres:5432/influencer_platform?schema=public
+      CRON_ENABLED: "true"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  pgdata:

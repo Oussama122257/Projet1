@@ -1,0 +1,406 @@
+// PayLoop — influencer performance tracking + automated payouts.
+//
+// Money convention: every monetary field is an INTEGER NUMBER OF CENTS.
+// Floats are never used for money. Rates are also cents (e.g. CPM rate 250 =
+// $2.50 per 1,000 views), so earnings math stays in integer space end to end.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  BRAND
+  INFLUENCER
+  ADMIN
+}
+
+enum Platform {
+  TIKTOK
+  INSTAGRAM
+  YOUTUBE
+}
+
+enum PricingModel {
+  CPM // paid per 1,000 views
+  CPC // paid per click
+  HYBRID // both, summed
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum PayoutStatus {
+  NOT_ELIGIBLE // below threshold
+  PENDING // eligible, awaiting the payout run
+  PROCESSING // transfer in flight
+  PAID
+  FAILED
+  HELD_FOR_REVIEW // fraud flag blocks release
+}
+
+enum PayoutState {
+  PENDING
+  PAID
+  FAILED
+  HELD_FOR_REVIEW
+}
+
+enum FraudReason {
+  LOW_ENGAGEMENT_RATIO
+  GEO_CONCENTRATION
+  SPIKE_ANOMALY
+  CLICK_VIEW_ANOMALY
+  DUPLICATE_CONTENT
+}
+
+enum FraudSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum StripeConnectStatus {
+  NONE // never started onboarding
+  ONBOARDING // account created, requirements outstanding
+  VERIFIED // payouts enabled
+  RESTRICTED // Stripe disabled transfers
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  SUSPENDED
+}
+
+// ---------------------------------------------------------------------------
+// Auth + users
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  passwordHash  String? // null for OAuth-only (Google) accounts
+  role          Role      @default(INFLUENCER)
+
+  // Influencer profile
+  handle       String?            @unique
+  bio          String?
+  country      String? // ISO 3166-1 alpha-2, drives payout currency rules
+  verification VerificationStatus @default(UNVERIFIED)
+
+  // Brand profile
+  companyName String?
+  website     String?
+
+  // Encrypted social OAuth tokens, keyed by platform.
+  // Shape: { TIKTOK: { accessToken, refreshToken, expiresAt, openId, scope } }
+  // Values are AES-256-GCM ciphertext — see src/lib/crypto.ts. Never plaintext.
+  socialTokens Json?
+
+  // Stripe Connect (influencers are third parties we pay out to, so this is a
+  // connected account + transfers, not a PaymentIntent).
+  stripeAccountId       String?             @unique
+  stripeConnectedStatus StripeConnectStatus @default(NONE)
+  stripePayoutsEnabled  Boolean             @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  campaigns     Campaign[]              @relation("BrandCampaigns")
+  applications  InfluencerApplication[]
+  socialLinks   SocialAccount[]
+  payouts       Payout[]
+  resolvedFlags FraudFlag[]             @relation("FlagResolver")
+  auditEvents   AuditEvent[]            @relation("AuditActor")
+
+  @@index([role])
+  @@index([verification])
+}
+
+// NextAuth adapter models.
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+/// A linked social profile. Tokens themselves live encrypted on User.socialTokens;
+/// this row holds the non-secret metadata we display and poll against.
+model SocialAccount {
+  id             String   @id @default(cuid())
+  userId         String
+  platform       Platform
+  platformUserId String
+  username       String
+  displayName    String?
+  avatarUrl      String?
+  followerCount  Int      @default(0)
+  scopes         String[] @default([])
+  connectedAt    DateTime @default(now())
+  lastSyncedAt   DateTime?
+  expiresAt      DateTime?
+  isActive       Boolean  @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform])
+  @@index([platform])
+}
+
+// ---------------------------------------------------------------------------
+// Campaigns + applications
+// ---------------------------------------------------------------------------
+
+model Campaign {
+  id          String  @id @default(cuid())
+  brandId     String
+  title       String
+  description String?
+  brief       String?
+
+  pricingModel PricingModel   @default(CPM)
+  /// CPM: cents per 1,000 views. CPC: cents per click. HYBRID uses both.
+  cpmRate      Int            @default(0)
+  cpcRate      Int            @default(0)
+  budgetCents  Int
+  spentCents   Int            @default(0)
+  /// Minimum accrued earnings before a transfer is attempted. Default $10.
+  minPayoutThresholdCents Int @default(1000)
+
+  platforms Platform[]     @default([])
+  status    CampaignStatus @default(DRAFT)
+  startDate DateTime
+  endDate   DateTime
+
+  requirements String?
+  hashtags     String[] @default([])
+  targetCountries String[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand        User                    @relation("BrandCampaigns", fields: [brandId], references: [id], onDelete: Cascade)
+  applications InfluencerApplication[]
+
+  @@index([brandId])
+  @@index([status])
+  @@index([startDate, endDate])
+}
+
+model InfluencerApplication {
+  id           String   @id @default(cuid())
+  campaignId   String
+  influencerId String
+
+  status       ApplicationStatus @default(PENDING)
+  pitch        String?
+  reviewedAt   DateTime?
+  rejectReason String?
+
+  // Submitted content
+  platform  Platform?
+  contentId String? // platform-native id (TikTok video id, IG media id, YT video id)
+  contentUrl String?
+  postedAt  DateTime?
+
+  // Rolling totals, refreshed by the sync job from the latest snapshot.
+  views       Int @default(0)
+  clicks      Int @default(0)
+  impressions Int @default(0)
+  likes       Int @default(0)
+  comments    Int @default(0)
+  shares      Int @default(0)
+
+  /// Gross earnings accrued to date, in cents.
+  earningsCents Int          @default(0)
+  /// Portion already transferred out, in cents.
+  paidOutCents  Int          @default(0)
+  payoutStatus  PayoutStatus @default(NOT_ELIGIBLE)
+
+  lastSyncedAt DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  campaign   Campaign                @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  influencer User                    @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  snapshots  ContentMetricSnapshot[]
+  payouts    Payout[]
+  fraudFlags FraudFlag[]
+
+  @@unique([campaignId, influencerId])
+  @@index([status])
+  @@index([payoutStatus])
+  @@index([influencerId])
+}
+
+/// One row per metric poll. This time series powers the analytics charts and the
+/// growth-trend fraud checks — never overwrite, always append.
+model ContentMetricSnapshot {
+  id            String   @id @default(cuid())
+  applicationId String
+  capturedAt    DateTime @default(now())
+
+  views       Int @default(0)
+  likes       Int @default(0)
+  comments    Int @default(0)
+  shares      Int @default(0)
+  impressions Int @default(0)
+  reach       Int @default(0)
+  clicks      Int @default(0)
+
+  /// Deltas vs. the previous snapshot — precomputed so trend queries stay cheap.
+  viewsDelta  Int @default(0)
+  clicksDelta Int @default(0)
+
+  /// { "DZ": 0.62, "FR": 0.21, ... } — share of audience per ISO country code.
+  geoDistribution Json?
+
+  /// Earnings recomputed at capture time, in cents.
+  earningsCents Int @default(0)
+
+  application InfluencerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, capturedAt])
+  @@index([capturedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Payouts
+// ---------------------------------------------------------------------------
+
+model Payout {
+  id            String @id @default(cuid())
+  applicationId String
+  influencerId  String
+
+  amountCents Int
+  currency    String      @default("usd")
+  status      PayoutState @default(PENDING)
+
+  stripeTransferId String? @unique
+  stripeAccountId  String?
+  failureReason    String?
+  /// Guards against double-paying the same accrual if the cron overlaps itself.
+  idempotencyKey   String  @unique
+
+  triggeredAt DateTime  @default(now())
+  paidAt      DateTime?
+  failedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  application InfluencerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  influencer  User                  @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+
+  @@index([influencerId, createdAt])
+  @@index([status])
+  @@index([applicationId])
+}
+
+// ---------------------------------------------------------------------------
+// Fraud
+// ---------------------------------------------------------------------------
+
+model FraudFlag {
+  id            String        @id @default(cuid())
+  applicationId String
+  reason        FraudReason
+  severity      FraudSeverity @default(MEDIUM)
+  detail        String
+  /// The metrics that tripped the rule, kept verbatim for the admin review UI.
+  evidence      Json?
+
+  resolvedById String?
+  resolvedAt   DateTime?
+  resolution   String? // CLEARED | UPHELD
+  resolverNote String?
+
+  createdAt DateTime @default(now())
+
+  application InfluencerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  resolvedBy  User?                 @relation("FlagResolver", fields: [resolvedById], references: [id])
+
+  @@index([applicationId])
+  @@index([resolvedAt])
+  @@index([severity])
+}
+
+/// Append-only audit trail. Every payout and status transition writes one row —
+/// this is what dispute resolution reads from.
+model AuditEvent {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorLabel String // "system:cron" when there is no human actor
+  action     String // e.g. "payout.paid", "application.approved"
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@index([action])
+}
